@@ -23,4 +23,18 @@ urn_GN_norm <- function(freq_minus,gamma_GN){
   return(unorm_out/(tot_freq_minus^2+gamma_GN*tot_freq_minus))
 }
 
-# Functions to compute the probability of past tables
+
+# Functions to compute probabilities of possible past (for observed dish) tables 
+prob_Table_insample = function(model="HPYP"){
+  if (model=="HPYP"){
+    # Function to compute prob assignment of past tables
+    probNewTable = (nTablesServingCurrentDish - sigma0)/ (nTables + theta0) *
+      (theta + sigma * nTablesInRestaurant[indexRestaurant])
+    
+    probs = c(nPeopleAtTable[indecesTablesInRestaurant][indecesPossibleTables] 
+              - sigma, probNewTable)
+  } else if (model=="HGnedin"){
+    # TBD
+  }
+  return(probs)
+}

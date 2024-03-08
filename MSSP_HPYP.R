@@ -107,9 +107,6 @@ tableAllocationAcrossGibbs = matrix(0,nrow = nGibbsUpdates,ncol = nObs)
 # will contain only the number of occupied tables in each restaurant
 
 
-
-
-
 ### Gibbs Sampler (past tables)
 for (r in 1:nGibbsUpdates) {
   ### ALLOCATE IN-SAMPLE OBSERVATIONS TO TABLES
@@ -135,20 +132,21 @@ for (r in 1:nGibbsUpdates) {
       
       indecesPossibleTables = (tablesValues[indecesTablesInRestaurant] ==
                                  dishAllocation[indexCustomerGlobal])
-      possibleTables = c(indecesTablesInRestaurant[indecesPossibleTables],-1)
       
-      probNewTable = 
-        (theta + sigma*nTablesInRestaurant[indexRestaurant])/(nTables + theta0)
-      nTablesServingCurrentDish = 
-        sum(tablesValues == dishAllocation[indexCustomerGlobal])
-      if(nTablesServingCurrentDish > 0) {
-        probNewTable = probNewTable*(nTablesServingCurrentDish - sigma0)
+      if(sum(indecesPossibleTables)==0){
+        # if no tables in the restaurant is serving the observed dish
+        newTableAllocation = -1 # open a new table
+      } else {
+        # if there are tables in the restaurant serving the observed dish       
+        possibleTables = c(indecesTablesInRestaurant[indecesPossibleTables],-1)
+      
+        nTablesServingCurrentDish = 
+          sum(tablesValues == dishAllocation[indexCustomerGlobal])
+      
+        probs = prob_Table_insample(model="HPYP")
+          
+        newTableAllocation = sample(possibleTables, 1, replace = F, prob = probs)
       }
-      
-      probs = c(nPeopleAtTable[indecesTablesInRestaurant][indecesPossibleTables] 
-                - sigma, probNewTable)
-      
-      newTableAllocation = sample(possibleTables,1,replace = F, prob = probs)
       
       if(newTableAllocation < 0) {
         nTables = nTables + 1
@@ -159,8 +157,7 @@ for (r in 1:nGibbsUpdates) {
           nPeopleAtTable[newTableAllocation] = 1
           nTablesInRestaurant[indexRestaurant] = 
             nTablesInRestaurant[indexRestaurant] + 1
-          tablesValues[newTableAllocation] = 
-            dishAllocation[indexCustomerGlobal]
+          tablesValues[newTableAllocation] = dishAllocation[indexCustomerGlobal]
         } else { # create a new table
           nTablesInRestaurant[indexRestaurant] = 
             nTablesInRestaurant[indexRestaurant] + 1
