@@ -87,7 +87,7 @@ tablesValues              = dishAllocation
 tableRestaurantAllocation = rep(1:J, times = I_j_vec)
 nPeopleAtTable            = rep(1,n)
 maxTableIndex             = n # largest table index
-nTables                   = n # number of non-empy tables
+nTables                   = n # number of non-empty tables
 nTablesInRestaurant       = I_j_vec
 observationDishAllocation = X_ji_vec
 dishesCounts              = as.vector(table(observationDishAllocation)) 
@@ -182,6 +182,9 @@ for (r in 1:nGibbsUpdates) {
     }
   }
 }
+
+
+### Conditional predictive probabilities
 
 
 
