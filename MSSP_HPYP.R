@@ -18,7 +18,6 @@ set.seed(123)
 
 # Multivariate species simulations/truth
 
-
 J           = 3 # Number of populations
 
 I_j_vec     = rep(100,J) 
@@ -53,6 +52,7 @@ for(j in 1:J){
     emp_pEPPF_un[d,j] = sum(X_ji_vec[lab_ji_vec]==d)
   }
 }
+
 emp_pEPPF_un
 emp_pEPPF_un/n
 
@@ -69,7 +69,7 @@ theta  = 10 # 10
 niter  = 2e2
 
 set.seed(123)
-####### CRF (check prior genero dal modello)
+####### CRF (check prior)
 sigma0 = 0.5
 theta0 = 10
 sigma  = 0.5
@@ -183,8 +183,22 @@ for (r in 1:nGibbsUpdates) {
   }
 }
 
+### Conditional predictive probabilities (1-step ahead)
 
-### Conditional predictive probabilities
+# Compute conditional on past tables and obs the probabilities 
+# of 1-step ahead future observations and tables
+
+
+
+
+    ##
+# Function to compute prob of discovering a new species in each population
+  prob_new_species_vec = (theta0+nDishes*sigma0)/(nTables + theta0) *
+    (theta + sigma * nTablesInRestaurant)/(theta +I_j_vec)
+##
+
+# Optimal arm
+which.max(prob_new_species_vec)
 
 
 
