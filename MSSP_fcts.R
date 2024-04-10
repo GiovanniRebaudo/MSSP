@@ -38,3 +38,22 @@ prob_Table_insample = function(model="HPYP"){
   }
   return(probs)
 }
+
+# Functions to compute probabilities of possible past (for observed dish) tables 
+# Different hyperparameters in different populations
+prob_Table_insample_j = function(model="HPYP"){
+  if (model=="HPYP"){
+    
+    theta_j = theta_vec[indexRestaurant]
+    sigma_j = sigma_vec[indexRestaurant]
+    # Function to compute prob assignment of past tables
+    probNewTable = (nTablesServingCurrentDish - sigma0)/ (nTables + theta0) *
+      (theta_j + sigma_j * nTablesInRestaurant[indexRestaurant])
+    
+    probs = c(nPeopleAtTable[indecesTablesInRestaurant][indecesPossibleTables] 
+              - sigma_j, probNewTable)
+  } else if (model=="HGnedin"){
+    # TBD
+  }
+  return(probs)
+}
