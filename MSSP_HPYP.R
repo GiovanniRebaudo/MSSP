@@ -107,7 +107,8 @@ tableAllocationAcrossGibbs = matrix(0,nrow = nGibbsUpdates,ncol = nObs)
 # will contain only the number of occupied tables in each restaurant
 
 
-### Gibbs Sampler (past tables)
+### Gibbs Sampler (past tables) 
+# FIXED HYPER-PARAMETERS EQUAL ACROSS POPULATIONS
 for (r in 1:nGibbsUpdates) {
   ### ALLOCATE IN-SAMPLE OBSERVATIONS TO TABLES
   if(r%%200==0){print(r)}
