@@ -11,6 +11,7 @@ library(salso)
 library(ggplot2) 
 Fixed_Shared_Hyper = FALSE
 Fixed_Diff_Hyper   = FALSE
+Random_Diff_Hyper  = FALSE
 # Load functions
 source("MSSP_fcts.R")
 Save_Plot = FALSE
@@ -202,12 +203,12 @@ for (r in 1:nGibbsUpdates) {
 }
 
 if(Fixed_Shared_Hyper){
-# FIXED HYPER-PARAMETERS EQUAL ACROSS POPULATIONS 
+# FIXED HYPER-PARAMETERS DIFFERENT ACROSS POPULATIONS 
 sigma_vec = rep(0.5,J)
 theta_vec = rep(10, J)
   
 ### Gibbs Sampler (past tables) 
-# FIXED HYPER-PARAMETERS EQUAL ACROSS POPULATIONS
+# FIXED HYPER-PARAMETERS DIFFERENT ACROSS POPULATIONS
 for (r in 1:nGibbsUpdates) {
   ### ALLOCATE IN-SAMPLE OBSERVATIONS TO TABLES
   if(r%%200==0){print(r)}
@@ -286,6 +287,148 @@ for (r in 1:nGibbsUpdates) {
 prob_new_species_vec = (theta0+nDishes*sigma0)/(nTables + theta0) *
   (theta_vec + sigma_vec * nTablesInRestaurant)/(theta_vec +I_j_vec)
 }
+
+
+# RANDOM HYPER-PARAMETERS DIFFERENT ACROSS POPULATIONS 
+# hyperparameters of Gamma distribution of \theta_j j = 0, 1, ..., J
+shape_theta = 1
+rate_theta  = 1
+# Hyperparameters of Beta distribution of \sigma_j j = 0, 1, ..., J
+a = 1
+b = 1
+# Adaptive Metropolis quantities
+ada_step   = 50
+ada_thresh = 0.44
+r_ada      = 0
+
+# Quantities for adaptive Metropolis quantities
+Prop_sd_log_sigma_j    = rep(1,J+1)
+Move_sigma_j_out       = matrix(nrow=J+1, ncol=Niter)
+Prop_sd_log_theta_j    = rep(1,J+1)
+Move_theta_j_out       = matrix(nrow=J+1, ncol=Niter)
+
+### Gibbs Sampler (past tables) 
+# RANDOM HYPER-PARAMETERS DIFFERENT ACROSS POPULATIONS 
+for (r in 1:nGibbsUpdates) {
+  ### ALLOCATE IN-SAMPLE OBSERVATIONS TO TABLES
+  if(r%%200==0){print(r)}
+  indexCustomerGlobal = 1
+  for (indexRestaurant in 1:nRest) {
+    
+    for (indexCustomerRestaurant in 1:I_j_vec[indexRestaurant]) {
+      indecesTablesInRestaurant = 
+        (1:maxTableIndex)[tableRestaurantAllocation==indexRestaurant]
+      currentTable = tableAllocation[indexCustomerGlobal] # get the current table
+      currentDish = dishAllocation[indexCustomerGlobal] # get the current dish
+      nPeopleAtTable[currentTable] = nPeopleAtTable[currentTable] - 1
+      
+      if(nPeopleAtTable[currentTable] == 0) { # free the table
+        nFreeTables = nFreeTables +1
+        freeTables = c(currentTable,freeTables)
+        tableRestaurantAllocation[currentTable] = -1
+        nTablesInRestaurant[indexRestaurant] = nTablesInRestaurant[indexRestaurant] - 1
+        nTables = nTables - 1
+        tablesValues[currentTable] = -1
+      }
+      
+      indecesPossibleTables = (tablesValues[indecesTablesInRestaurant] ==
+                                 dishAllocation[indexCustomerGlobal])
+      
+      if(sum(indecesPossibleTables)==0){
+        # if no tables in the restaurant is serving the observed dish
+        newTableAllocation = -1 # open a new table
+      } else {
+        # if there are tables in the restaurant serving the observed dish       
+        possibleTables = c(indecesTablesInRestaurant[indecesPossibleTables],-1)
+        
+        nTablesServingCurrentDish = 
+          sum(tablesValues == dishAllocation[indexCustomerGlobal])
+        
+        probs = prob_Table_insample(model="HPYP")
+        
+        newTableAllocation = sample(possibleTables, 1, replace = F, prob = probs)
+      }
+      
+      if(newTableAllocation < 0) {
+        nTables = nTables + 1
+        if(nFreeTables > 0) { # pick the first free table
+          newTableAllocation = freeTables[1]
+          freeTables = freeTables[-1]
+          nFreeTables = nFreeTables - 1
+          nPeopleAtTable[newTableAllocation] = 1
+          nTablesInRestaurant[indexRestaurant] = 
+            nTablesInRestaurant[indexRestaurant] + 1
+          tablesValues[newTableAllocation] = dishAllocation[indexCustomerGlobal]
+        } else { # create a new table
+          nTablesInRestaurant[indexRestaurant] = 
+            nTablesInRestaurant[indexRestaurant] + 1
+          maxTableIndex = maxTableIndex + 1
+          newTableAllocation = maxTableIndex
+          nPeopleAtTable = c(nPeopleAtTable,1)
+          tablesValues = c(tablesValues,dishAllocation[indexCustomerGlobal])
+        }
+        # assign the table to the restaurant
+        tableRestaurantAllocation[newTableAllocation] = indexRestaurant
+      } else{ # the sampled table is already occupied in the restaurant --> 
+        # just update the relevant quantities
+        nPeopleAtTable[newTableAllocation] = 
+          nPeopleAtTable[newTableAllocation] + 1
+      }
+      
+      tableAllocation[indexCustomerGlobal] = newTableAllocation
+      
+      tableAllocationAcrossGibbs[r,indexCustomerGlobal] = newTableAllocation
+      
+      indexCustomerGlobal = indexCustomerGlobal + 1
+    }
+  }
+  
+  # Update parameters \sigma_j \theta_j j = 0, 1, ..., J
+  for (indexRestaurant in 1:nRest) {
+    # Update parameters \sigma_j, j = 0, 1, ..., J
+    
+    # Update parameters \theta_j, j = 0, 1, ..., J
+    
+    move_sigma_j          = (log(runif(1)) < AccProb)
+    
+  
+    
+    # On logarithmic scale (consider Jacobian)
+    AccProb_sigma_j = #TBD
+    
+    # Save Quantities
+    Move_sigma_j_out[indexRestaurant, r] = move_sigma_j
+    
+    # Update proposal adaptive MH steps
+    if(r%%ada_step == 0){
+      r_ada                    = r_ada + ada_step
+      ada_delta                = min(0.01, 1/sqrt(r))
+      seq_ada_step             = (r_ada-ada_step):r_ada
+      
+      # (Ada)
+      # Update proposal for \sigma_j, j = 0, 1, ..., J
+      Accept_sigma_j      = apply(Move_sigma_j_out[,seq_ada_step], 1, mean)
+      Dec_which_sigma_j   = Accept_sigma_j < ada_thresh
+      Prop_sd_log_sigma_j = ifelse(Dec_which_sigma_j, 
+                                  exp(log(Prop_sd_log_sigma_j) - ada_delta), 
+                                   exp(log(Prop_sd_log_sigma_j) + ada_delta))
+      
+      # Update proposal for \theta_j, j = 0, 1, ..., J
+      Accept_theta_j      = apply(Move_theta_j_out[,seq_ada_step], 1, mean)
+      Dec_which_theta_j   = Accept_theta_j < ada_thresh
+      Prop_sd_log_theta_j = ifelse(Dec_which_theta_j, 
+                                  exp(log(Prop_sd_log_theta_j) - ada_delta), 
+                                  exp(log(Prop_sd_log_theta_j) + ada_delta))
+    }
+    
+  }
+
+}
+
+prob_new_species_vec = (theta0+nDishes*sigma0)/(nTables + theta0) *
+  (theta_vec + sigma_vec * nTablesInRestaurant)/(theta_vec +I_j_vec)
+
+
 
 # Optimal arm
 which.max(prob_new_species_vec)
