@@ -194,7 +194,6 @@ plusDP_MAB<- function(data, a = 1, b = 1, p = rep(1/3, 3),
       
     for(iter in 2:(tot_iter+1)){
       #assigned customer to restaurants 
-      #THIS CAN BE OpTImIZE COMMON SPECIES CAN BE KEPT FIXED in the cycle in iter
       r[iter,,] = r[iter-1,,]
         for(j in 1:J){ #a
           unique_tab = tabulate(X[j,])
