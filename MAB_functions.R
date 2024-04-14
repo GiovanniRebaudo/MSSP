@@ -125,14 +125,7 @@ plusDP_MAB<- function(data, a = 1, b = 1, p = rep(1/3, 3),
   ##  burnin = length of butnin of each MCMC
   ##  iter = number of iter after burnin of each MCMC
   ##  seed 
-  a = 1
-  b = 1
-  p = rep(1/3, 3)
-  init_samples = 30
-  new_samples = 300
-  burnin = 10
-  iters = 200
-  seed = 0
+
   # Initializes the progress bar
   pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
                        max = new_samples, # Maximum value of the progress bar
