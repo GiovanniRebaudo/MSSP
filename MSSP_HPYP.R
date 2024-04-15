@@ -9,6 +9,7 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 library(salso)   
 library(ggplot2) 
+library(orthopolynom)
 Fixed_Shared_Hyper = FALSE
 Fixed_Diff_Hyper   = FALSE
 Random_Diff_Hyper  = FALSE
@@ -244,7 +245,7 @@ for (r in 1:nGibbsUpdates) {
         nTablesServingCurrentDish = 
           sum(tablesValues == dishAllocation[indexCustomerGlobal])
       
-        probs = prob_Table_insample(model="HPYP")
+        probs = prob_Table_insample_j(model="HPYP")
           
         newTableAllocation = sample(possibleTables, 1, replace = F, prob = probs)
       }
@@ -294,18 +295,24 @@ prob_new_species_vec = (theta0+nDishes*sigma0)/(nTables + theta0) *
 shape_theta = 1
 rate_theta  = 1
 # Hyperparameters of Beta distribution of \sigma_j j = 0, 1, ..., J
-a = 1
-b = 1
+a_sigma = 1
+b_sigma = 1
 # Adaptive Metropolis quantities
 ada_step   = 50
 ada_thresh = 0.44
 r_ada      = 0
+Niter_MH   = 5 # Number of MH iterations used to update hyperparameters
+# in each Gibbs iteration
 
 # Quantities for adaptive Metropolis quantities
 Prop_sd_log_sigma_j    = rep(1,J+1)
 Move_sigma_j_out       = matrix(nrow=J+1, ncol=Niter)
 Prop_sd_log_theta_j    = rep(1,J+1)
 Move_theta_j_out       = matrix(nrow=J+1, ncol=Niter)
+
+##### INITIALIZATION OF HYPERPARAMETERS WITH THEIR PRIOR MEANS
+theta_vec = rep(shape_theta/rate_theta, nRest)
+sigma_vec = rep(a_sigma/(a_sigma+b_sigma), nRest)
 
 ### Gibbs Sampler (past tables) 
 # RANDOM HYPER-PARAMETERS DIFFERENT ACROSS POPULATIONS 
@@ -344,7 +351,7 @@ for (r in 1:nGibbsUpdates) {
         nTablesServingCurrentDish = 
           sum(tablesValues == dishAllocation[indexCustomerGlobal])
         
-        probs = prob_Table_insample(model="HPYP")
+        probs = prob_Table_insample_j(model="HPYP")
         
         newTableAllocation = sample(possibleTables, 1, replace = F, prob = probs)
       }
@@ -383,21 +390,51 @@ for (r in 1:nGibbsUpdates) {
     }
   }
   
-  # Update parameters \sigma_j \theta_j j = 0, 1, ..., J
-  for (indexRestaurant in 1:nRest) {
-    # Update parameters \sigma_j, j = 0, 1, ..., J
-    
-    # Update parameters \theta_j, j = 0, 1, ..., J
-    
-    move_sigma_j          = (log(runif(1)) < AccProb)
-    
-  
-    
-    # On logarithmic scale (consider Jacobian)
-    AccProb_sigma_j = #TBD
-    
-    # Save Quantities
-    Move_sigma_j_out[indexRestaurant, r] = move_sigma_j
+  # Niter_MH is the number of iteration of teh MH within each Gibbs iter
+  for (iter_MH in Niter_MH){
+    # Update parameters \sigma_j \theta_j j = 0, 1, ..., J
+    for (indexRestaurant in 1:nRest) {
+      # Update parameters \theta_0
+      # Propose \theta_0
+      
+      sigma_old      = sigma_vec[0]
+      theta_old      = theta[0]
+      log_theta_old  = log(theta_old)
+      log_theta_prop = rnorm(1, mean = log_theta_old, sd=Prop_sd_log_theta_j[1])
+      theta_prop     = exp(log_theta_prop)
+      
+      # Acc_prob_theta is on the logarithimic scale (consider Jacobian)
+      # Prior and Jacobian part
+      Acc_prob_theta = shape_theta*(log_theta_old -log_theta_prop)+
+        rate_theta*(theta_old-theta_prop)
+      
+      # Likelihood part
+      vec_1_to_D = 1:nDishes
+      Acc_prob_theta = Acc_prob_theta +
+        sum(log(theta_prop + vec_1_to_D *sigma_old) - 
+        log(theta_old + vec_1_to_D *sigma_old))
+      
+      
+      # Update parameters \sigma_0
+      
+      # Update parameters \theta_j, j = 1, ..., J
+      
+     
+      
+      # Update parameters \sigma_j, j = 1, ..., J
+      
+      
+      
+      move_sigma_j          = (log(runif(1)) < AccProb)
+      
+      
+      
+      # On logarithmic scale (consider Jacobian)
+      AccProb_sigma_j = #TBD
+        
+        # Save Quantities
+        Move_sigma_j_out[indexRestaurant, r] = move_sigma_j
+  }
     
     # Update proposal adaptive MH steps
     if(r%%ada_step == 0){
