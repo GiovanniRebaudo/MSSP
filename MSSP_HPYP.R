@@ -45,6 +45,17 @@ if (J != length(I_j_vec)){print("error: J != length(I_j_vec)"); stop()}
 # Truth of in sample species
 table(X_ji_vec) # overall species freq. (n_{.,d})_{d=1}^{D}
 
+# Numbers of different species within pop
+K_j_vec = integer(J)
+K_j_vec = unique(X_ji_vec[1:I_j_vec[1]]) 
+for(j in 1:J){
+  lab_ji_vec = 1:I_j_vec[j]
+  if(j!=1){lab_ji_vec = lab_ji_vec+cum_I_j_vec[j-1]}
+  K_j_vec[j] = length(unique(X_ji_vec[lab_ji_vec]))
+}
+K_j_vec
+cum_K_j_vec = cumsum(K_j_vec)
+
 # Empirical pEPPF unnormalized
 emp_pEPPF_un = matrix(0, nrow=D, ncol=J)
 for(j in 1:J){
@@ -59,30 +70,63 @@ emp_pEPPF_un
 emp_pEPPF_un/n
 
 # Numerically 0
-epsilon = epsilon
+epsilon = 1e-14
 # Numerically infinite
 M       = 1e100
 
 # MCMC quantities
 nGibbsUpdates             = 2e4
 
+
+
 set.seed(123)
-##### INITIALIZATION TO ALL DIFFERENT TABLES (and some double notation)
+##### INITIALIZATION
 nRest                     = J
 nObs                      = n
-tableAllocation           = 1:nObs
-dishAllocation            = X_ji_vec
-tablesValues              = dishAllocation
-tableRestaurantAllocation = rep(1:J, times = I_j_vec)
-nPeopleAtTable            = rep(1,n)
-maxTableIndex             = n # largest table index
-nTables                   = n # number of non-empty tables
-nTablesInRestaurant       = I_j_vec
-observationDishAllocation = X_ji_vec
-dishesCounts              = as.vector(table(observationDishAllocation)) 
-# how many people are eating a certain dish
 nDishes                   = D
+dishAllocation            = X_ji_vec
+
+#####
+if(FALSE){
+  ##### INITIALIZATION TO ALL DIFFERENT TABLES (and some double notation)
+  tableAllocation           = 1:nObs
+  tablesValues              = dishAllocation
+  tableRestaurantAllocation = rep(1:J, times = I_j_vec)
+  nPeopleAtTable            = rep(1,n)
+  maxTableIndex             = n # largest table index
+  nTables                   = n # number of non-empty tables
+  nTablesInRestaurant       = I_j_vec
+  observationDishAllocation = X_ji_vec
+  dishesCounts              = as.vector(table(observationDishAllocation)) 
+  # how many people are eating a certain dish
+} else if (FALSE){
+  ##### INITIALIZATION TO ALL THE SAME TABLE IF SAME DISH AND POPULATION
+  # (and some double notation)
+  tableAllocation           = integer(n)
+  for(j in 1:J){
+    lab_ji_vec = 1:I_j_vec[j]
+    past_K_j_vec = 0
+    if(j!=1){
+      lab_ji_vec   = lab_ji_vec+cum_I_j_vec[j-1]
+      past_K_j_vec = cum_K_j_vec[j-1]
+    }
+    tableAllocation[lab_ji_vec] = X_ji_vec[lab_ji_vec] + past_K_j_vec
+  }
+  tablesValues              = dishAllocation
+  tableRestaurantAllocation = rep(1:J, times = I_j_vec)
+  nPeopleAtTable            = rep(1,n)
+  maxTableIndex             = n # largest table index
+  nTables                   = n # number of non-empty tables
+  nTablesInRestaurant       = I_j_vec
+  observationDishAllocation = X_ji_vec
+  dishesCounts              = as.vector(table(observationDishAllocation)) 
+  # how many people are eating a certain dish
+}
+
+
 ##### 
+
+####
 
 
 # Initialization
@@ -325,7 +369,7 @@ for (r in 1:nGibbsUpdates) {
       indecesTablesInRestaurant = 
         (1:maxTableIndex)[tableRestaurantAllocation==indexRestaurant]
       currentTable = tableAllocation[indexCustomerGlobal] # get the current table
-      currentDish = dishAllocation[indexCustomerGlobal] # get the current dish
+      currentDish  = dishAllocation[indexCustomerGlobal] # get the current dish
       nPeopleAtTable[currentTable] = nPeopleAtTable[currentTable] - 1
       
       if(nPeopleAtTable[currentTable] == 0) { # free the table
