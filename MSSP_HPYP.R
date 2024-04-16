@@ -83,25 +83,48 @@ set.seed(123)
 ##### INITIALIZATION
 nRest                     = J
 nObs                      = n
-nDishes                   = D
+nDishes                   = D  # number of dishes served in the franchise
 dishAllocation            = X_ji_vec
 
 #####
 if(FALSE){
   ##### INITIALIZATION TO ALL DIFFERENT TABLES (and some double notation)
   tableAllocation           = 1:nObs
+  
   tablesValues              = dishAllocation
+  # dish served at each table in the franchise
+  
   tableRestaurantAllocation = rep(1:J, times = I_j_vec)
+  # allocation of the table to the restaurant its fixed in hssp 
+  # (not in nested variations)
+  
   nPeopleAtTable            = rep(1,n)
-  maxTableIndex             = n # largest table index
-  nTables                   = n # number of non-empty tables
+  # people sitting at each table
+  
+  nTables                   = n 
+  # number of occupied tables in the franchise
+  
+  maxTableIndex             = n 
+  # max table index (nTables + nFreeTables = maxTableIndex)
+  
   nTablesInRestaurant       = I_j_vec
+  # contains only the number of occupied tables in each restaurant
+  
   observationDishAllocation = X_ji_vec
-  dishesCounts              = as.vector(table(observationDishAllocation)) 
+  
   # how many people are eating a certain dish
+  
+  ###
+  nFreeTables = 0
+  
+  freeTables = c() # indices of free tables CONSIDER USING A STACK
+  
+  tableAllocationAcrossGibbs = matrix(0,nrow = nGibbsUpdates, ncol = nObs) 
+  # tables to which customers are allocated across Gibbs
+  
 } else if (FALSE){
   ##### INITIALIZATION TO ALL THE SAME TABLE IF SAME DISH AND POPULATION
-  # (and some double notation)
+  
   tableAllocation           = integer(n)
   for(j in 1:J){
     lab_ji_vec = 1:I_j_vec[j]
@@ -112,222 +135,41 @@ if(FALSE){
     }
     tableAllocation[lab_ji_vec] = X_ji_vec[lab_ji_vec] + past_K_j_vec
   }
+  # allocation of customers to tables --> 
+  # table indexes are global (across the franchise)
+  
+  nTables                   = max(tableAllocation)
+  # number of occupied tables in the franchise
+  
+  maxTableIndex             =  n 
+  # max table index (nTables + nFreeTables = maxTableIndex)
+  
   tablesValues              = dishAllocation
+  # dish served at each table in the franchise
+  
+  
   tableRestaurantAllocation = rep(1:J, times = I_j_vec)
+  # allocation of the table to the restaurant it is fixed across mcmc in hssp 
+  # (not fixed in nested variations)
+  
   nPeopleAtTable            = rep(1,n)
-  maxTableIndex             = n # largest table index
-  nTables                   = n # number of non-empty tables
-  nTablesInRestaurant       = I_j_vec
+  # people sitting at each table
+
+  nTablesInRestaurant       = K_j_vec
+  # contains only the number of occupied tables in each restaurant
+  
   observationDishAllocation = X_ji_vec
-  dishesCounts              = as.vector(table(observationDishAllocation)) 
   # how many people are eating a certain dish
+  ###
+  nFreeTables = 0
+  freeTables = c() # indices of free tables CONSIDER USING A STACK
+  tableAllocationAcrossGibbs = matrix(0,nrow = nGibbsUpdates,ncol = nObs) 
+  # tables to which customers are allocated across Gibbs
 }
-
-
-##### 
-
-####
-
-
-# Initialization
-nFreeTables = 0
-freeTables = c() # indices of free tables CONSIDER USING A STACK
-tableAllocationAcrossGibbs = matrix(0,nrow = nGibbsUpdates,ncol = nObs) 
-# tables to which customers are allocated across Gibbs
 
 # in the following nTables will be the total number of tables, 
 # with some of them that might be free, while nTablesInRestaurant 
 # will contain only the number of occupied tables in each restaurant
-
-
-if(Fixed_Shared_Hyper){
-  # Hyper-parameter settings
-  alpha  = 0.5
-  gamma  = 10 # 10
-  sigma0 = 0.5
-  theta0 = 10 # 10
-  sigma  = 0.5
-  theta  = 10 # 10
-
-  
-  
-### Gibbs Sampler (past tables) 
-# FIXED HYPER-PARAMETERS EQUAL ACROSS POPULATIONS
-for (r in 1:nGibbsUpdates) {
-  ### ALLOCATE IN-SAMPLE OBSERVATIONS TO TABLES
-  if(r%%200==0){print(r)}
-  indexCustomerGlobal = 1
-  for (indexRestaurant in 1:nRest) {
-    
-    for (indexCustomerRestaurant in 1:I_j_vec[indexRestaurant]) {
-      indecesTablesInRestaurant = 
-        (1:maxTableIndex)[tableRestaurantAllocation==indexRestaurant]
-      currentTable = tableAllocation[indexCustomerGlobal] # get the current table
-      currentDish = dishAllocation[indexCustomerGlobal] # get the current dish
-      nPeopleAtTable[currentTable] = nPeopleAtTable[currentTable] - 1
-      
-      if(nPeopleAtTable[currentTable] == 0) { # free the table
-        nFreeTables = nFreeTables +1
-        freeTables = c(currentTable,freeTables)
-        tableRestaurantAllocation[currentTable] = -1
-        nTablesInRestaurant[indexRestaurant] = nTablesInRestaurant[indexRestaurant] - 1
-        nTables = nTables - 1
-        tablesValues[currentTable] = -1
-      }
-      
-      indecesPossibleTables = (tablesValues[indecesTablesInRestaurant] ==
-                                 dishAllocation[indexCustomerGlobal])
-      
-      if(sum(indecesPossibleTables)==0){
-        # if no tables in the restaurant is serving the observed dish
-        newTableAllocation = -1 # open a new table
-      } else {
-        # if there are tables in the restaurant serving the observed dish       
-        possibleTables = c(indecesTablesInRestaurant[indecesPossibleTables],-1)
-      
-        nTablesServingCurrentDish = 
-          sum(tablesValues == dishAllocation[indexCustomerGlobal])
-      
-        probs = prob_Table_insample(model="HPYP")
-          
-        newTableAllocation = sample(possibleTables, 1, replace = F, prob = probs)
-      }
-      
-      if(newTableAllocation < 0) {
-        nTables = nTables + 1
-        if(nFreeTables > 0) { # pick the first free table
-          newTableAllocation = freeTables[1]
-          freeTables = freeTables[-1]
-          nFreeTables = nFreeTables - 1
-          nPeopleAtTable[newTableAllocation] = 1
-          nTablesInRestaurant[indexRestaurant] = 
-            nTablesInRestaurant[indexRestaurant] + 1
-          tablesValues[newTableAllocation] = dishAllocation[indexCustomerGlobal]
-        } else { # create a new table
-          nTablesInRestaurant[indexRestaurant] = 
-            nTablesInRestaurant[indexRestaurant] + 1
-          maxTableIndex = maxTableIndex + 1
-          newTableAllocation = maxTableIndex
-          nPeopleAtTable = c(nPeopleAtTable,1)
-          tablesValues = c(tablesValues,dishAllocation[indexCustomerGlobal])
-        }
-        # assign the table to the restaurant
-        tableRestaurantAllocation[newTableAllocation] = indexRestaurant
-      } else{ # the sampled table is already occupied in the restaurant --> 
-        # just update the relevant quantities
-        nPeopleAtTable[newTableAllocation] = 
-          nPeopleAtTable[newTableAllocation] + 1
-      }
-      
-      tableAllocation[indexCustomerGlobal] = newTableAllocation
-      
-      tableAllocationAcrossGibbs[r,indexCustomerGlobal] = newTableAllocation
-      
-      indexCustomerGlobal = indexCustomerGlobal + 1
-    }
-  }
-}
-
-### Conditional predictive probabilities (1-step ahead)
-
-# Compute conditional on past tables and obs the probabilities 
-# of 1-step ahead future observations and tables
-
-# TBD
-
-
-# Function to compute prob of discovering a new species in each population
-# FIXED HYPER-PARAMETERS EQUAL ACROSS POPULATIONS
-  prob_new_species_vec = (theta0+nDishes*sigma0)/(nTables + theta0) *
-    (theta + sigma * nTablesInRestaurant)/(theta +I_j_vec)
-##
-}
-
-if(Fixed_Shared_Hyper){
-# FIXED HYPER-PARAMETERS DIFFERENT ACROSS POPULATIONS 
-sigma_vec = rep(0.5,J)
-theta_vec = rep(10, J)
-  
-### Gibbs Sampler (past tables) 
-# FIXED HYPER-PARAMETERS DIFFERENT ACROSS POPULATIONS
-for (r in 1:nGibbsUpdates) {
-  ### ALLOCATE IN-SAMPLE OBSERVATIONS TO TABLES
-  if(r%%200==0){print(r)}
-  indexCustomerGlobal = 1
-  for (indexRestaurant in 1:nRest) {
-    
-    for (indexCustomerRestaurant in 1:I_j_vec[indexRestaurant]) {
-      indecesTablesInRestaurant = 
-        (1:maxTableIndex)[tableRestaurantAllocation==indexRestaurant]
-      currentTable = tableAllocation[indexCustomerGlobal] # get the current table
-      currentDish = dishAllocation[indexCustomerGlobal] # get the current dish
-      nPeopleAtTable[currentTable] = nPeopleAtTable[currentTable] - 1
-      
-      if(nPeopleAtTable[currentTable] == 0) { # free the table
-        nFreeTables = nFreeTables +1
-        freeTables = c(currentTable,freeTables)
-        tableRestaurantAllocation[currentTable] = -1
-        nTablesInRestaurant[indexRestaurant] = nTablesInRestaurant[indexRestaurant] - 1
-        nTables = nTables - 1
-        tablesValues[currentTable] = -1
-      }
-      
-      indecesPossibleTables = (tablesValues[indecesTablesInRestaurant] ==
-                                 dishAllocation[indexCustomerGlobal])
-      
-      if(sum(indecesPossibleTables)==0){
-        # if no tables in the restaurant is serving the observed dish
-        newTableAllocation = -1 # open a new table
-      } else {
-        # if there are tables in the restaurant serving the observed dish       
-        possibleTables = c(indecesTablesInRestaurant[indecesPossibleTables],-1)
-      
-        nTablesServingCurrentDish = 
-          sum(tablesValues == dishAllocation[indexCustomerGlobal])
-      
-        probs = prob_Table_insample_j(model="HPYP")
-          
-        newTableAllocation = sample(possibleTables, 1, replace = F, prob = probs)
-      }
-      
-      if(newTableAllocation < 0) {
-        nTables = nTables + 1
-        if(nFreeTables > 0) { # pick the first free table
-          newTableAllocation = freeTables[1]
-          freeTables = freeTables[-1]
-          nFreeTables = nFreeTables - 1
-          nPeopleAtTable[newTableAllocation] = 1
-          nTablesInRestaurant[indexRestaurant] = 
-            nTablesInRestaurant[indexRestaurant] + 1
-          tablesValues[newTableAllocation] = dishAllocation[indexCustomerGlobal]
-        } else { # create a new table
-          nTablesInRestaurant[indexRestaurant] = 
-            nTablesInRestaurant[indexRestaurant] + 1
-          maxTableIndex = maxTableIndex + 1
-          newTableAllocation = maxTableIndex
-          nPeopleAtTable = c(nPeopleAtTable,1)
-          tablesValues = c(tablesValues,dishAllocation[indexCustomerGlobal])
-        }
-        # assign the table to the restaurant
-        tableRestaurantAllocation[newTableAllocation] = indexRestaurant
-      } else{ # the sampled table is already occupied in the restaurant --> 
-        # just update the relevant quantities
-        nPeopleAtTable[newTableAllocation] = 
-          nPeopleAtTable[newTableAllocation] + 1
-      }
-      
-      tableAllocation[indexCustomerGlobal] = newTableAllocation
-      
-      tableAllocationAcrossGibbs[r,indexCustomerGlobal] = newTableAllocation
-      
-      indexCustomerGlobal = indexCustomerGlobal + 1
-    }
-  }
-}
-
-prob_new_species_vec = (theta0+nDishes*sigma0)/(nTables + theta0) *
-  (theta_vec + sigma_vec * nTablesInRestaurant)/(theta_vec +I_j_vec)
-}
 
 
 # RANDOM HYPER-PARAMETERS DIFFERENT ACROSS POPULATIONS 
