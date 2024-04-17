@@ -9,9 +9,6 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 library(salso)   
 library(ggplot2) 
-Fixed_Shared_Hyper = FALSE
-Fixed_Diff_Hyper   = FALSE
-Random_Diff_Hyper  = FALSE
 # Load functions
 source("MSSP_fcts.R")
 Save_Plot = FALSE
@@ -32,6 +29,7 @@ n           = sum(I_j_vec) # tot number of observations
 X_ji_vec = c(rep(1,I_j_vec[1]), # X_1i_vec = (X_{1,1},...,X_{1,I_1})
              rep(c(rep(2,15),rep(3,20),rep(1,15)),2), # X_2i_vec
              rep(1:10,10)) # X_3i_vec
+
 
 Xstar_d_vec = unique(X_ji_vec) # observed dishes (dishes=species)
 D           = length(Xstar_d_vec) # overall number of dishes
@@ -69,113 +67,21 @@ for(j in 1:J){
 emp_pEPPF_un
 emp_pEPPF_un/n
 
-# Numerically 0
-epsilon = 1e-14
-# Numerically infinite
-M       = 1e100
+# Numerically 0 lowerbound hyperpar
+epsilon = 1e-5
+# Numerically infinite upperbound hyperpar
+Max_val = 1e10
 
 # MCMC quantities
-nGibbsUpdates             = 2e4
+nGibbsUpdates             = 2e3 #2e4
+
+tableAllocationAcrossGibbs = matrix(0,nrow = nGibbsUpdates, ncol = n) 
+# tables to which customers are allocated across Gibbs
 
 
 
 set.seed(123)
-##### INITIALIZATION
-nRest                     = J
-nObs                      = n
-nDishes                   = D  # number of dishes served in the franchise
-dishAllocation            = X_ji_vec
-# allocation of customers to dishes --> 
-# dish indexes are global (across the franchise)
-tableRestaurantAllocation = rep(1:J, times = I_j_vec)
-# allocation of the table to the restaurant it is fixed across mcmc in hssp 
-# (not fixed in nested variations)
 
-#####
-if(FALSE){
-  ##### INITIALIZATION TO ALL DIFFERENT TABLES (and some double notation)
-  tableAllocation           = 1:nObs
-  
-  tablesValues              = dishAllocation
-  # dish served at each table in the franchise
-  
-  nPeopleAtTable            = rep(1,n)
-  # people sitting at each table
-  
-  nTables                   = n 
-  # number of occupied tables in the franchise
-  
-  maxTableIndex             = n 
-  # max table index (nTables + nFreeTables = maxTableIndex)
-  
-  nTablesInRestaurant       = I_j_vec
-  # contains only the number of occupied tables in each restaurant
-  
-  observationDishAllocation = X_ji_vec
-  
-  # how many people are eating a certain dish
-  
-  ###
-  nFreeTables = 0
-  
-  freeTables = c() # indices of free tables CONSIDER USING A STACK
-  
-  tableAllocationAcrossGibbs = matrix(0,nrow = nGibbsUpdates, ncol = nObs) 
-  # tables to which customers are allocated across Gibbs
-  
-} else if (FALSE){
-  ##### INITIALIZATION TO ALL THE SAME TABLE IF SAME DISH AND POPULATION
-  
-  tableAllocation           = integer(n)
-  for(j in 1:J){
-    lab_ji_vec = 1:I_j_vec[j]
-    past_K_j_vec = 0
-    if(j!=1){
-      lab_ji_vec   = lab_ji_vec+cum_I_j_vec[j-1]
-      past_K_j_vec = cum_K_j_vec[j-1]
-    }
-    tableAllocation[lab_ji_vec] = X_ji_vec[lab_ji_vec] + past_K_j_vec
-  }
-  # allocation of customers to tables --> 
-  # table indexes are global (across the franchise)
-  
-  nTables                   = max(tableAllocation)
-  # number of occupied tables in the franchise
-  
-  maxTableIndex             =  nTables
-  # max table index (nTables + nFreeTables = maxTableIndex)
-  
-  tablesValues              = integer(nTables)
-  for(tab_lab in 1:nTables){
-    tablesValues[tab_lab] = unique(X_ji_vec[tableAllocation == tab_lab])
-  }
-  # dish served at each table in the franchise
-  
-  nPeopleAtTable            = integer(nTables)
-  for(tab_lab in 1:nTables){
-    nPeopleAtTable[tab_lab] = sum(tableAllocation==tab_lab)
-  }
-  # people sitting at each table
-
-  nTablesInRestaurant       = K_j_vec
-  # contains only the number of occupied tables in each restaurant
-  
-  observationDishAllocation = integer(nDishes)
-  for(lab_dish in 1:nDishes){
-    observationDishAllocation[lab_dish] = sum(X_ji_vec==lab_dish)
-  }
-    
-  # how many people are eating a certain dish
-  ###
-  nFreeTables = 0
-  freeTables = c() # indices of free tables CONSIDER USING A STACK
-  tableAllocationAcrossGibbs = matrix(0, nrow = nGibbsUpdates,ncol = nObs) 
-  # tables to which customers are allocated across Gibbs
-}
-
-# in the following nTables will be the total number of tables, 
-# with some of them that might be free, while nTablesInRestaurant 
-# will contain only the number of occupied tables in each restaurant
 
 
 # RANDOM HYPER-PARAMETERS DIFFERENT ACROSS POPULATIONS 
@@ -193,9 +99,9 @@ niter_MH   = 5 # Number of MH iterations used to update hyperparameters
 # in each Gibbs iteration
 
 # Quantities for adaptive Metropolis quantities
-Prop_sd_logit_sig_j    = rep(1, J+1)
+Prop_sd_logit_sig_j    = rep(0.01, J+1)
 Move_sigma_j_out       = matrix(nrow=J+1, ncol=nGibbsUpdates)
-Prop_sd_log_theta_j    = rep(1, J+1)
+Prop_sd_log_theta_j    = rep(0.01, J+1)
 Move_theta_j_out       = matrix(nrow=J+1, ncol=nGibbsUpdates)
 
 ##### INITIALIZATION OF HYPERPARAMETERS WITH THEIR PRIOR MEANS
@@ -291,7 +197,6 @@ for (r in 1:nGibbsUpdates) {
     ell_d_vec[d] <- sum(tablesValues == d)
   }
 
-    
   # niter_MH is the number of iteration of the MH within each Gibbs iteration
   # Update parameters \sigma_j \theta_j j = 0, 1, ..., J
   for (iter_MH in niter_MH){
@@ -306,26 +211,26 @@ for (r in 1:nGibbsUpdates) {
     # nRest+1 is position of \theta_0
     theta_prop     = exp(log_theta_prop)
     
-    # Acc_prob_theta is on the logarithmic scale (consider Jacobian)
-    # Prior and Jacobian part
-    Acc_prob_theta = shape_theta*(log_theta_prop - log_theta_old)+
-      rate_theta*(theta_old-theta_prop)
+    if(epsilon<theta_prop && theta_prop<Max_val){
+      # Acc_prob_theta is on the logarithmic scale (consider Jacobian)
+      # Prior and Jacobian part
+      Acc_prob_theta = shape_theta*(log_theta_prop - log_theta_old)+
+        rate_theta*(theta_old-theta_prop)
+      
+      # Likelihood part
+      
+      Acc_prob_theta = Acc_prob_theta +
+        sum(log(theta_prop + vec_1_to_D *sigma_old) - 
+              log(theta_old + vec_1_to_D *sigma_old)) +
+        lgamma(theta_old + nTables) - lgamma(theta_old +1) + 
+        lgamma(theta_prop +1) - lgamma(theta_old + nTables)
+      
+      
+      move_theta         = (log(runif(1)) < Acc_prob_theta)
+      theta_old          = ifelse(move_theta, theta_prop, theta_old)
+    }
     
-    # Likelihood part
-    
-    Acc_prob_theta = Acc_prob_theta +
-      sum(log(theta_prop + vec_1_to_D *sigma_old) - 
-            log(theta_old + vec_1_to_D *sigma_old)) +
-      lgamma(theta_old + nTables) - lgamma(theta_old +1) + 
-      lgamma(theta_prop +1) - lgamma(theta_old + nTables)
-    
-    
-    move_theta         = (log(runif(1)) < Acc_prob_theta)
-    
-    theta_old          = ifelse(move_theta, theta_prop, theta_old)
     theta0            = theta_old
-    
-
     
     # Update parameters \sigma_0
     log_sigma_old   = log(sigma_old)
@@ -389,6 +294,8 @@ for (r in 1:nGibbsUpdates) {
                              sd=Prop_sd_log_theta_j[indexRestaurant])
       theta_prop     = exp(log_theta_prop)
       
+      if(epsilon<theta_prop && theta_prop<Max_val){
+      
       # Acc_prob_theta is on the logarithmic scale (consider Jacobian)
       # Prior Gamma and Jacobian part
       Acc_prob_theta = shape_theta*(log_theta_prop - log_theta_old)+
@@ -411,6 +318,7 @@ for (r in 1:nGibbsUpdates) {
       move_theta     = (log(runif(1)) < Acc_prob_theta)
       
       theta_old = ifelse(move_theta, theta_prop, theta_old)
+      }
       
       theta_vec[indexRestaurant] = theta_old
       
@@ -495,7 +403,6 @@ for (r in 1:nGibbsUpdates) {
                                  exp(log(Prop_sd_log_theta_j) + ada_delta))
   }
   # End Update proposal adaptive MH steps
-
 }
 
 prob_new_species_vec = (theta0+nDishes*sigma0)/(nTables + theta0) *
