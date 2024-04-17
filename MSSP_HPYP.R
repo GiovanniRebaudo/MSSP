@@ -85,6 +85,11 @@ nRest                     = J
 nObs                      = n
 nDishes                   = D  # number of dishes served in the franchise
 dishAllocation            = X_ji_vec
+# allocation of customers to dishes --> 
+# dish indexes are global (across the franchise)
+tableRestaurantAllocation = rep(1:J, times = I_j_vec)
+# allocation of the table to the restaurant it is fixed across mcmc in hssp 
+# (not fixed in nested variations)
 
 #####
 if(FALSE){
@@ -93,10 +98,6 @@ if(FALSE){
   
   tablesValues              = dishAllocation
   # dish served at each table in the franchise
-  
-  tableRestaurantAllocation = rep(1:J, times = I_j_vec)
-  # allocation of the table to the restaurant its fixed in hssp 
-  # (not in nested variations)
   
   nPeopleAtTable            = rep(1,n)
   # people sitting at each table
@@ -141,29 +142,34 @@ if(FALSE){
   nTables                   = max(tableAllocation)
   # number of occupied tables in the franchise
   
-  maxTableIndex             =  n 
+  maxTableIndex             =  nTables
   # max table index (nTables + nFreeTables = maxTableIndex)
   
-  tablesValues              = dishAllocation
+  tablesValues              = integer(nTables)
+  for(tab_lab in 1:nTables){
+    tablesValues[tab_lab] = unique(X_ji_vec[tableAllocation == tab_lab])
+  }
   # dish served at each table in the franchise
   
-  
-  tableRestaurantAllocation = rep(1:J, times = I_j_vec)
-  # allocation of the table to the restaurant it is fixed across mcmc in hssp 
-  # (not fixed in nested variations)
-  
-  nPeopleAtTable            = rep(1,n)
+  nPeopleAtTable            = integer(nTables)
+  for(tab_lab in 1:nTables){
+    nPeopleAtTable[tab_lab] = sum(tableAllocation==tab_lab)
+  }
   # people sitting at each table
 
   nTablesInRestaurant       = K_j_vec
   # contains only the number of occupied tables in each restaurant
   
-  observationDishAllocation = X_ji_vec
+  observationDishAllocation = integer(nDishes)
+  for(lab_dish in 1:nDishes){
+    observationDishAllocation[lab_dish] = sum(X_ji_vec==lab_dish)
+  }
+    
   # how many people are eating a certain dish
   ###
   nFreeTables = 0
   freeTables = c() # indices of free tables CONSIDER USING A STACK
-  tableAllocationAcrossGibbs = matrix(0,nrow = nGibbsUpdates,ncol = nObs) 
+  tableAllocationAcrossGibbs = matrix(0, nrow = nGibbsUpdates,ncol = nObs) 
   # tables to which customers are allocated across Gibbs
 }
 
@@ -187,9 +193,9 @@ niter_MH   = 5 # Number of MH iterations used to update hyperparameters
 # in each Gibbs iteration
 
 # Quantities for adaptive Metropolis quantities
-Prop_sd_logit_sig_j    = rep(1,J+1)
+Prop_sd_logit_sig_j    = rep(1, J+1)
 Move_sigma_j_out       = matrix(nrow=J+1, ncol=nGibbsUpdates)
-Prop_sd_log_theta_j    = rep(1,J+1)
+Prop_sd_log_theta_j    = rep(1, J+1)
 Move_theta_j_out       = matrix(nrow=J+1, ncol=nGibbsUpdates)
 
 ##### INITIALIZATION OF HYPERPARAMETERS WITH THEIR PRIOR MEANS
@@ -329,8 +335,8 @@ for (r in 1:nGibbsUpdates) {
     logit_sig_prop = rnorm(1, mean = logit_sigma_old, 
                            sd=Prop_sd_logit_sig_j[nRest+1]) 
     # nRest+1 is position of \sigma_0
-    sigma_prop       = 1/(1+ exp(-logit_sig_prop)) # logistic function
-    log_sigma_prop   = log(sigma_prop)
+    log_sigma_prop   = plogis(logit_sig_prop, log=T) # inv logistic function
+    sigma_prop       = exp(log_sigma_prop) 
     log_1_sigma_prop = log(1-sigma_prop)
     
     if(epsilon<sigma_prop && sigma_prop<1-epsilon){
@@ -416,12 +422,12 @@ for (r in 1:nGibbsUpdates) {
       # Propose \sigma_j
       logit_sig_prop = rnorm(1, mean = logit_sigma_old, 
                              sd=Prop_sd_logit_sig_j[indexRestaurant]) 
-      sigma_prop       = 1/(1+ exp(-logit_sig_prop)) # logistic function
+      log_sigma_prop   = plogis(logit_sig_prop, log=T) # inv logistic function
+      sigma_prop       = exp(log_sigma_prop) 
       
       if(epsilon<sigma_prop && sigma_prop<1-epsilon){
         # If we propose something numerically out the parameter space 
         # we have to reject
-        log_sigma_prop   = log(sigma_prop)
         log_1_sigma_prop = log(1-sigma_prop)
         
         
