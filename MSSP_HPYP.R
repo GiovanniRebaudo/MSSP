@@ -44,28 +44,12 @@ if (J != length(I_j_vec)){print("error: J != length(I_j_vec)"); stop()}
 table(X_ji_vec) # overall species freq. (n_{.,d})_{d=1}^{D}
 
 # Numbers of different species within pop
-K_j_vec = integer(J)
-K_j_vec = unique(X_ji_vec[1:I_j_vec[1]]) 
-for(j in 1:J){
-  lab_ji_vec = 1:I_j_vec[j]
-  if(j!=1){lab_ji_vec = lab_ji_vec+cum_I_j_vec[j-1]}
-  K_j_vec[j] = length(unique(X_ji_vec[lab_ji_vec]))
-}
-K_j_vec
-cum_K_j_vec = cumsum(K_j_vec)
+K_j_vec_fct(I_j_vec=I_j_vec, Data_vec=X_ji_vec)
 
-# Empirical pEPPF unnormalized
-emp_pEPPF_un = matrix(0, nrow=D, ncol=J)
-for(j in 1:J){
-  lab_ji_vec = 1:I_j_vec[j]
-  if(j!=1){lab_ji_vec = lab_ji_vec+cum_I_j_vec[j-1]}
-  for (d in Xstar_d_vec){
-    emp_pEPPF_un[d,j] = sum(X_ji_vec[lab_ji_vec]==d)
-  }
-}
+emp_pEPPF_un =emp_pEPPF_un_fct(I_j_vec=I_j_vec, Data_vec=X_ji_vec)
 
 emp_pEPPF_un
-emp_pEPPF_un/n
+emp_pEPPF_un/n # empirical pEPPF
 
 # Numerically 0 lowerbound hyperpar
 epsilon = 1e-5
@@ -81,8 +65,6 @@ tableAllocationAcrossGibbs = matrix(0,nrow = nGibbsUpdates, ncol = n)
 
 
 set.seed(123)
-
-
 
 # RANDOM HYPER-PARAMETERS DIFFERENT ACROSS POPULATIONS 
 # hyperparameters of Gamma distribution of \theta_j j = 0, 1, ..., J
@@ -104,12 +86,12 @@ Move_sigma_j_out       = matrix(nrow=J+1, ncol=nGibbsUpdates)
 Prop_sd_log_theta_j    = rep(0.01, J+1)
 Move_theta_j_out       = matrix(nrow=J+1, ncol=nGibbsUpdates)
 
-##### INITIALIZATION OF HYPERPARAMETERS WITH THEIR PRIOR MEANS
-theta_vec = rep(shape_theta/rate_theta, nRest)
-sigma_vec = rep(a_sigma/(a_sigma+b_sigma), nRest)
 
-theta0  = shape_theta/rate_theta
-sigma0  = a_sigma/(a_sigma+b_sigma)
+#### Initialization
+initHSSP <- function(I_j_vec  = I_j_vec, 
+                     Data_vec = X_ji_vec,
+                     tablesInit = "equal", # "separate"
+                     model ="HPYP")
 
 ### Gibbs Sampler (past tables) 
 # RANDOM HYPER-PARAMETERS DIFFERENT ACROSS POPULATIONS 
