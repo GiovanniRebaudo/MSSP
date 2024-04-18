@@ -49,7 +49,7 @@ K_j_vec_fct(I_j_vec=I_j_vec, Data_vec=X_ji_vec)
 emp_pEPPF_un =emp_pEPPF_un_fct(I_j_vec=I_j_vec, Data_vec=X_ji_vec)
 
 emp_pEPPF_un
-emp_pEPPF_un/n # empirical pEPPF
+round(emp_pEPPF_un/n,2) # empirical pEPPF
 
 # Numerically 0 lowerbound hyperpar
 epsilon = 1e-5
@@ -77,7 +77,7 @@ b_sigma = 1
 ada_step   = 50
 ada_thresh = 0.44
 r_ada      = 0
-niter_MH   = 5 # Number of MH iterations used to update hyperparameters
+niter_MH   = 1 # Number of MH iterations used to update hyperparameters
 # in each Gibbs iteration
 
 # Quantities for adaptive Metropolis quantities
@@ -88,10 +88,10 @@ Move_theta_j_out       = matrix(nrow=J+1, ncol=nGibbsUpdates)
 
 
 #### Initialization
-initHSSP <- function(I_j_vec  = I_j_vec, 
-                     Data_vec = X_ji_vec,
-                     tablesInit = "equal", # "separate"
-                     model ="HPYP")
+init_all = initHSSP_fct(I_j_vec  = I_j_vec, 
+                        Data_vec = X_ji_vec,
+                        tablesInit = "equal", # "separate"
+                        model ="HPYP")
 
 ### Gibbs Sampler (past tables) 
 # RANDOM HYPER-PARAMETERS DIFFERENT ACROSS POPULATIONS 

@@ -77,9 +77,7 @@ K_j_vec_fct <- function(
     K_j_vec[j] = length(unique(Data_vec[lab_ji_vec]))
   }
   cum_K_j_vec = cumsum(K_j_vec)
-  return(list(K_j_vec=K_j_vec,
-              cum_K_j_vec = cumsum(K_j_vec)
-              ))
+  return(list(K_j_vec=K_j_vec, cum_K_j_vec = cumsum(K_j_vec)))
 }
 
 
@@ -100,22 +98,16 @@ emp_pEPPF_un_fct <- function(
     lab_ji_vec = 1:I_j_vec[j]
     if(j!=1){lab_ji_vec = lab_ji_vec+cum_I_j_vec[j-1]}
     for (d in Xstar_d_vec){
-      emp_pEPPF_un[d,j] = sum(X_ji_vec[lab_ji_vec]==d)
+      emp_pEPPF_un[d,j] = sum(Data_vec[lab_ji_vec]==d)
     }
   }
   return(emp_pEPPF_un)
 }
-  
-  
-
-
-emp_pEPPF_un
-emp_pEPPF_un/n
 
 
 
 ##### INITIALIZATION HSSP
-initHSSP <- function(I_j_vec, 
+initHSSP_fct <- function(I_j_vec, 
                      # number of observation in each population
                      Data_vec, 
                      # vector of data ordered by groups i.e.,
@@ -136,7 +128,7 @@ initHSSP <- function(I_j_vec,
   
   # Check if the dishes are labelled in order of arrival
   uniDish = unique(Data_vec)
-  if(! uniDish= sort(uniDish)){
+  if(!uniDish==sort(uniDish)){
     print("Error: Data are not in order of arrival")
     stop()
   }
@@ -172,7 +164,7 @@ initHSSP <- function(I_j_vec,
     tablesValues              = dishAllocation
     # dish served at each table in the franchise
     
-    tableRestaurantAllocation = rep(1:J, times = I_j_vec)
+    tableRestaurantAllocation = rep(1:nRest, times = I_j_vec)
     # allocation of the table to the restaurant
     
     nPeopleAtTable            = rep(1,n)
@@ -187,7 +179,7 @@ initHSSP <- function(I_j_vec,
     nTablesInRestaurant       = I_j_vec
     # contains only the number of occupied tables in each restaurant
     
-    observationDishAllocation = X_ji_vec
+    observationDishAllocation = Data_vec
     
     # how many people are eating a certain dish
     
@@ -198,6 +190,58 @@ initHSSP <- function(I_j_vec,
     
   } else if (tablesInit == "equal") {
     
+    ##### INITIALIZATION TO ALL THE SAME TABLE IF SAME DISH AND POPULATION
+    tableAllocation           = integer(n)
+    for(j in 1:nRest){
+      lab_ji_vec = 1:I_j_vec[j]
+      past_K_j_vec = 0
+      if(j!=1){
+        lab_ji_vec   = lab_ji_vec+cum_I_j_vec[j-1]
+        past_K_j_vec = cum_K_j_vec[j-1]
+      }
+      tableAllocation[lab_ji_vec] = Data_vec[lab_ji_vec] + past_K_j_vec
+    }
+    # allocation of customers to tables --> 
+    # table indexes are global (across the franchise)
+    
+    tableRestaurantAllocation = rep(1:nRest, times = K_j_vec)
+    # allocation of the table to the restaurant
+    
+    nTables                   = max(tableAllocation)
+    # number of occupied tables in the franchise
+    
+    maxTableIndex             =  nTables
+    # max table index (nTables + nFreeTables = maxTableIndex)
+    
+    tablesValues              = integer(nTables)
+    for(tab_lab in 1:nTables){
+      tablesValues[tab_lab] = unique(Data_vec[tableAllocation == tab_lab])
+    }
+    # dish served at each table in the franchise
+    
+    nPeopleAtTable            = integer(nTables)
+    for(tab_lab in 1:nTables){
+      nPeopleAtTable[tab_lab] = sum(tableAllocation==tab_lab)
+    }
+    # people sitting at each table
+    
+    nTablesInRestaurant       = K_j_vec
+    # contains only the number of occupied tables in each restaurant
+    
+    observationDishAllocation = integer(nDishes)
+    for(lab_dish in 1:nDishes){
+      observationDishAllocation[lab_dish] = sum(Data_vec==lab_dish)
+    }
+    
+    # how many people are eating a certain dish
+    ###
+    nFreeTables = 0
+    freeTables = c() # indices of free tables CONSIDER USING A STACK
+  
+  # in the following nTables will be the total number of tables, 
+  # with some of them that might be free, while nTablesInRestaurant 
+  # will contain only the number of occupied tables in each restaurant
+    
   } else if (tablesInit == "manual") {
     
     print("Error: TBD")
@@ -207,79 +251,23 @@ initHSSP <- function(I_j_vec,
     print("Error: TBD")
     
   }
-  return(theta_vec = theta_vec,
-         sigma_vec = sigma_vec,
-         theta0    = theta0,
-         TBD
+ 
+  return( # initialization values of
+    theta_vec      = theta_vec,
+    # theta_1, ..., theta_J
+    sigma_vec      = sigma_vec,
+    # sigma_1, ..., sigma_J
+    theta0         = theta0,
+    # theta_0
+    sigma0         = sigma0,
+    # sigma_0
+    nObs           = nObs
+    # total number of observations
+    nRest          = nRest
+    # number of populations
+    nDishes        = nDishes              
+    # number of dishes served in the franchise
+    dishAllocation = dishAllocation          
+    
          )
 }
-
-
-
-
-
-
-
-# allocation of customers to dishes --> 
-# dish indexes are global (across the franchise)
-
-
-
-#####
-if(FALSE){
-  
-  
-} else if (TRUE){
-  ##### INITIALIZATION TO ALL THE SAME TABLE IF SAME DISH AND POPULATION
-  
-  tableAllocation           = integer(n)
-  for(j in 1:J){
-    lab_ji_vec = 1:I_j_vec[j]
-    past_K_j_vec = 0
-    if(j!=1){
-      lab_ji_vec   = lab_ji_vec+cum_I_j_vec[j-1]
-      past_K_j_vec = cum_K_j_vec[j-1]
-    }
-    tableAllocation[lab_ji_vec] = X_ji_vec[lab_ji_vec] + past_K_j_vec
-  }
-  # allocation of customers to tables --> 
-  # table indexes are global (across the franchise)
-  
-  tableRestaurantAllocation = rep(1:J, times = K_j_vec)
-  # allocation of the table to the restaurant
-  
-  nTables                   = max(tableAllocation)
-  # number of occupied tables in the franchise
-  
-  maxTableIndex             =  nTables
-  # max table index (nTables + nFreeTables = maxTableIndex)
-  
-  tablesValues              = integer(nTables)
-  for(tab_lab in 1:nTables){
-    tablesValues[tab_lab] = unique(X_ji_vec[tableAllocation == tab_lab])
-  }
-  # dish served at each table in the franchise
-  
-  nPeopleAtTable            = integer(nTables)
-  for(tab_lab in 1:nTables){
-    nPeopleAtTable[tab_lab] = sum(tableAllocation==tab_lab)
-  }
-  # people sitting at each table
-  
-  nTablesInRestaurant       = K_j_vec
-  # contains only the number of occupied tables in each restaurant
-  
-  observationDishAllocation = integer(nDishes)
-  for(lab_dish in 1:nDishes){
-    observationDishAllocation[lab_dish] = sum(X_ji_vec==lab_dish)
-  }
-  
-  # how many people are eating a certain dish
-  ###
-  nFreeTables = 0
-  freeTables = c() # indices of free tables CONSIDER USING A STACK
-}
-
-# in the following nTables will be the total number of tables, 
-# with some of them that might be free, while nTablesInRestaurant 
-# will contain only the number of occupied tables in each restaurant
