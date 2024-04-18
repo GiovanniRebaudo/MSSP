@@ -114,13 +114,13 @@ initHSSP_fct <- function(I_j_vec,
                      # X_{1,1}, ..., X_{I_1, 1}, ...., X_{1,J}, ..., X_{I_J, J}
                      model ="HPYP", 
                      # model
-                     shape_theta = shape_theta, 
+                     shape_theta, 
                      # common shape of theta_0, ..., theta_J gamma prior
-                     rate_theta = rate_theta, 
+                     rate_theta, 
                      # common rate of theta_0, ..., theta_J gamma prior
-                     a_sigma = a_sigma, 
+                     a_sigma, 
                      # first hyper of sigma_0, ..., sigma_J beta prior
-                     b_sigma = b_sigma, 
+                     b_sigma, 
                      # second hyper of sigma_0, ..., sigma_J beta prior
                      tablesInit = c("equal", "separate", "manual", "random")
                      # initialization strategy for tables
@@ -128,15 +128,16 @@ initHSSP_fct <- function(I_j_vec,
   
   # Check if the dishes are labelled in order of arrival
   uniDish = unique(Data_vec)
-  if(!uniDish==sort(uniDish)){
+  if(!all.equal(uniDish,sort(uniDish))){
     print("Error: Data are not in order of arrival")
     stop()
   }
   
-  nObs                      = n = length(Data_vec)
-  nRest                     = J = length(I_j_vec)
+  nObs                      = length(Data_vec)
+  # total number of observations
+  nRest                     = length(I_j_vec)
   # number of populations
-  nDishes                   = D  = length(unique(Data_vec))
+  nDishes                   = length(unique(Data_vec))
   # number of dishes served in the franchise
   dishAllocation            = Data_vec
   
@@ -160,6 +161,8 @@ initHSSP_fct <- function(I_j_vec,
   if (tablesInit == "separate"){
     ##### INITIALIZATION TO ALL DIFFERENT TABLES (and some double notation)
     tableAllocation           = 1:nObs
+    # allocation of customers to tables --> 
+    # table indexes are global (across the franchise)
     
     tablesValues              = dishAllocation
     # dish served at each table in the franchise
@@ -167,20 +170,19 @@ initHSSP_fct <- function(I_j_vec,
     tableRestaurantAllocation = rep(1:nRest, times = I_j_vec)
     # allocation of the table to the restaurant
     
-    nPeopleAtTable            = rep(1,n)
+    nPeopleAtTable            = rep(1,nObs)
     # people sitting at each table
     
-    nTables                   = n 
+    nTables                   = nObs 
     # number of occupied tables in the franchise
     
-    maxTableIndex             = n 
+    maxTableIndex             = nObs 
     # max table index (nTables + nFreeTables = maxTableIndex)
     
     nTablesInRestaurant       = I_j_vec
     # contains only the number of occupied tables in each restaurant
     
     observationDishAllocation = Data_vec
-    
     # how many people are eating a certain dish
     
     ###
@@ -189,9 +191,13 @@ initHSSP_fct <- function(I_j_vec,
     freeTables = c() # indices of free tables CONSIDER USING A STACK
     
   } else if (tablesInit == "equal") {
-    
     ##### INITIALIZATION TO ALL THE SAME TABLE IF SAME DISH AND POPULATION
-    tableAllocation           = integer(n)
+    
+    K_j_vec_    = K_j_vec_fct(I_j_vec=I_j_vec, Data_vec=Data_vec)
+    cum_K_j_vec = K_j_vec_$cum_K_j_vec
+    K_j_vec     = K_j_vec_$K_j_vec
+    
+    tableAllocation           = integer(nObs)
     for(j in 1:nRest){
       lab_ji_vec = 1:I_j_vec[j]
       past_K_j_vec = 0
@@ -252,22 +258,43 @@ initHSSP_fct <- function(I_j_vec,
     
   }
  
-  return( # initialization values of
-    theta_vec      = theta_vec,
+  return(list(# initialization values of
+    theta_vec                 = theta_vec,
     # theta_1, ..., theta_J
-    sigma_vec      = sigma_vec,
+    sigma_vec                 = sigma_vec,
     # sigma_1, ..., sigma_J
-    theta0         = theta0,
+    theta0                    = theta0,
     # theta_0
-    sigma0         = sigma0,
+    sigma0                    = sigma0,
     # sigma_0
-    nObs           = nObs
+    nObs                      = nObs,
     # total number of observations
-    nRest          = nRest
+    nRest                     = nRest,
     # number of populations
-    nDishes        = nDishes              
+    nDishes                   = nDishes,             
     # number of dishes served in the franchise
-    dishAllocation = dishAllocation          
-    
-         )
+    dishAllocation            = dishAllocation,
+    # observed individual vector of species in order of arrival
+    tableAllocation           = tableAllocation,
+    # allocation of customers to tables --> 
+    # table indexes are global (across the franchise)
+    tablesValues              = tablesValues,
+    # dish served at each table in the franchise
+    tableRestaurantAllocation = tableRestaurantAllocation,
+    # allocation of the table to the restaurant
+    nPeopleAtTable            = nPeopleAtTable,
+    # people sitting at each table
+    nTables                   = nTables,
+    # number of occupied tables in the franchise
+    maxTableIndex             = maxTableIndex,
+    # max table index (nTables + nFreeTables = maxTableIndex)
+    nTablesInRestaurant       = nTablesInRestaurant,
+    # contains only the number of occupied tables in each restaurant
+    observationDishAllocation = observationDishAllocation,
+    # how many people are eating a certain dish
+    nFreeTables = nFreeTables,
+    # number of free tables
+    freeTables = freeTables 
+    # indices of free tables CONSIDER USING A STACK
+    )    )
 }
