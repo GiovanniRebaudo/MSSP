@@ -397,9 +397,9 @@ HPYP_MCMC_fct = function(
   
   if(Hyperprior){
     # Quantities for adaptive Metropolis quantities
-    Prop_sd_logit_sig_j = rep(0.01, nRest+1)
+    Prop_sd_logit_sig_j = rep(1, nRest+1)
     Move_sigma_j_out    = matrix(nrow=nRest+1, ncol=nGibbsUpdates)
-    Prop_sd_log_theta_j = rep(0.01, nRest+1)
+    Prop_sd_log_theta_j = rep(1, nRest+1)
     Move_theta_j_out    = matrix(nrow=nRest+1, ncol=nGibbsUpdates)
     # We can save less if needed e.g., matrix(nrow=J+1, ncol=ada_step)
   }
@@ -493,13 +493,11 @@ HPYP_MCMC_fct = function(
     
     if(Hyperprior){
       # MH within Gibbs step for hyperparameters
-      
-      vec_1_to_D   = 1:nDishes
       vec_1_to_D_1 = 1:(nDishes-1)
       
       ell_d_vec = integer(nDishes)
       for (d in unique(dishAllocation)){
-        ell_d_vec[d] <- sum(tablesValues == d)
+        ell_d_vec[d] = sum(tablesValues == d)
       }
       
       # niter_MH is the number of iteration of the MH within each Gibbs iteration
@@ -525,62 +523,61 @@ HPYP_MCMC_fct = function(
           # Likelihood part
           
           Acc_prob_theta = Acc_prob_theta +
-            sum(log(theta_prop + vec_1_to_D *sigma_old) - 
-                  log(theta_old + vec_1_to_D *sigma_old)) +
-            lgamma(theta_old + nTables) - lgamma(theta_old +1) + 
-            lgamma(theta_prop +1) - lgamma(theta_old + nTables)
+            sum(log(theta_prop + vec_1_to_D_1 * sigma_old) - 
+                log(theta_old  + vec_1_to_D_1 * sigma_old)) +
+            lgamma(theta_old + nTables) - lgamma(theta_prop + nTables) +
+            lgamma(theta_prop +1)       - lgamma(theta_old +1)
           
           
           move_theta         = (log(runif(1)) < Acc_prob_theta)
           theta_old          = ifelse(move_theta, theta_prop, theta_old)
+        } else {
+          move_theta = FALSE
         }
         
         theta0            = theta_old
         
         # Update parameters \sigma_0
         log_sigma_old   = log(sigma_old)
-        log_1_sigma_old = log(1-sigma_old)
-        logit_sigma_old = log_sigma_old-log_1_sigma_old # logit function
+        logit_sigma_old = qlogis(sigma_old) # logit function
         # Propose \sigma_0
         logit_sig_prop = rnorm(1, mean = logit_sigma_old, 
                                sd=Prop_sd_logit_sig_j[nRest+1]) 
         # nRest+1 is position of \sigma_0
         log_sigma_prop   = plogis(logit_sig_prop, log=T) # inv logistic function
         sigma_prop       = exp(log_sigma_prop) 
-        log_1_sigma_prop = log(1-sigma_prop)
         
         if(epsilon<sigma_prop && sigma_prop<1-epsilon){
           # If we propose something numerically out the parameter space 
           # we have to reject
-          log_sigma_prop   = log(sigma_prop)
-          log_1_sigma_prop = log(1-sigma_prop)
           
-          
-          # Acc_prob_theta is on the logarithmic scale (consider Jacobian)
+        
+          # Acc_prob_sigma is on the logarithmic scale (consider Jacobian)
           # Prior and Jacobian part
           Acc_prob_sigma = a_sigma*(log_sigma_prop - log_sigma_old)+
-            b_sigma*(log_1_sigma_prop - log_1_sigma_old)
+            b_sigma*(log(1-sigma_prop) - log(1-sigma_old))
           
           # Likelihood part (it can be made slightly more effiecient TBD)
           Acc_prob_sigma = Acc_prob_sigma + 
-            nDishes *(lgamma(1-sigma_old) - lgamma(1-sigma_prop))+
-            sum(lgamma(ell_d_vec - sigma_prop) + lgamma(ell_d_vec - sigma_old))+
+            nDishes *(lgamma(1-sigma_old) - 
+                      lgamma(1-sigma_prop))+
             sum(log(theta0 + vec_1_to_D_1 * sigma_prop) - 
-                  log(theta0 + vec_1_to_D_1 * sigma_old))
+                log(theta0 + vec_1_to_D_1 * sigma_old)) +
+            sum(lgamma(ell_d_vec - sigma_prop) - 
+                lgamma(ell_d_vec - sigma_old))
+
           # End Likelihood part
           
           move_sigma = (log(runif(1)) < Acc_prob_sigma)
           
           if(move_sigma){
-            sigma_old       = sigma_prop
-            log_1_sigma_old = log(1-sigma_old)
-            logit_sigma_old = log_sigma_old-log_1_sigma_old # logit function
+            sigma_old = sigma_prop
+            sigma0    = sigma_old
+            # logit_sigma_old = qlogis(sigma_old) # logit function
           }
         } else {
           move_sigma = FALSE
         }
-        
-        sigma0    = sigma_old
         
         # Save acceptance
         if (iter_MH == niter_MH){
@@ -608,30 +605,33 @@ HPYP_MCMC_fct = function(
             
             # Quantities useful in the log Likelihood part (PYP log EPPF)
             ell_j            = nTablesInRestaurant[indexRestaurant]
-            vec_1_to_ell_j   = 1:ell_j
             vec_1_to_ell_j_1 = 1:(ell_j-1)
             I_j              = I_j_vec[indexRestaurant]
             
             # Likelihood part (PYP log EPPF)
             Acc_prob_theta = Acc_prob_theta +
-              sum(log(theta_prop + vec_1_to_ell_j *sigma_old) - 
-                    log(theta_old + vec_1_to_ell_j *sigma_old)) +
-              lgamma(theta_old + I_j) - lgamma(theta_old +1) + 
-              lgamma(theta_prop +1) - lgamma(theta_old + I_j)
+              sum(log(theta_prop  + vec_1_to_ell_j_1 *sigma_old) - 
+                    log(theta_old + vec_1_to_ell_j_1 *sigma_old)) +
+              lgamma(theta_old + I_j) - lgamma(theta_prop + I_j) +
+              lgamma(theta_prop +1)   - lgamma(theta_old +1)
             # End: Likelihood part (PYP log EPPF)
             
             move_theta     = (log(runif(1)) < Acc_prob_theta)
             
             theta_old = ifelse(move_theta, theta_prop, theta_old)
+            if (move_theta){
+              theta_old = theta_prop
+              theta_vec[indexRestaurant] = theta_old
+            }
+          } else {
+            move_theta = FALSE
           }
           
-          theta_vec[indexRestaurant] = theta_old
           
           
           # Update parameters \sigma_j, j = 1, ..., J
           log_sigma_old   = log(sigma_old)
-          log_1_sigma_old = log(1-sigma_old)
-          logit_sigma_old = log_sigma_old-log_1_sigma_old # logit function
+          logit_sigma_old = qlogis(sigma_old) # logit function
           # Propose \sigma_j
           logit_sig_prop = rnorm(1, mean = logit_sigma_old, 
                                  sd=Prop_sd_logit_sig_j[indexRestaurant]) 
@@ -641,13 +641,12 @@ HPYP_MCMC_fct = function(
           if(epsilon<sigma_prop && sigma_prop<1-epsilon){
             # If we propose something numerically out the parameter space 
             # we have to reject
-            log_1_sigma_prop = log(1-sigma_prop)
             
             
-            # Acc_prob_theta is on the logarithmic scale (consider Jacobian)
+            # Acc_prob_sigma is on the logarithmic scale (consider Jacobian)
             # Prior and Jacobian part
             Acc_prob_sigma = a_sigma*(log_sigma_prop - log_sigma_old)+
-              b_sigma*(log_1_sigma_prop - log_1_sigma_old)
+              b_sigma*(log(1-sigma_prop) - log(1-sigma_old))
             
             # Likelihood part (it can be made slightly more effiecient TBD)
             indecesTablesInRestaurant = 
@@ -655,9 +654,11 @@ HPYP_MCMC_fct = function(
             q_j_vec = nPeopleAtTable[indecesTablesInRestaurant]
             
             Acc_prob_sigma = Acc_prob_sigma + 
-              ell_j *(lgamma(1 - sigma_old) - lgamma(1 - sigma_prop))+
-              sum(lgamma(q_j_vec - sigma_prop) + lgamma(q_j_vec - sigma_old))+
-              sum(log(theta_old + vec_1_to_ell_j_1 * sigma_prop) - 
+              ell_j *(lgamma(1 - sigma_old) - 
+                      lgamma(1 - sigma_prop))+
+              sum(lgamma(q_j_vec - sigma_prop) - 
+                  lgamma(q_j_vec - sigma_old))+
+              sum(log(theta_old   + vec_1_to_ell_j_1 * sigma_prop) - 
                     log(theta_old + vec_1_to_ell_j_1 * sigma_old))
             # End Likelihood part
             
@@ -665,14 +666,12 @@ HPYP_MCMC_fct = function(
             
             if(move_sigma){
               sigma_old       = sigma_prop
-              log_1_sigma_old = log(1-sigma_old)
-              logit_sigma_old = log_sigma_old-log_1_sigma_old # logit function
+              # logit_sigma_old = qlogis(sigma_old) # logit function
+              sigma_vec[indexRestaurant] = sigma_old
             }
           } else {
             move_sigma = FALSE
           }
-          
-          sigma_vec[indexRestaurant] = sigma_old
           
           
           # Save acceptance if is the last iteration of MH

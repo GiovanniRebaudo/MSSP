@@ -55,7 +55,7 @@ shape_theta    = 1
 rate_theta     = 1
 a_sigma        = 1 
 b_sigma        = 1
-niter_MH       = 5
+niter_MH       = 50
 
 # save more quantities in MCMC for debugging and convergence checks
 
@@ -75,12 +75,12 @@ output = "all"# c("prob_new", "prob and last", "all")
 
 # Run a short mcmc with fixed hyper par to better initialize the tables
 init_all = HPYP_MCMC_fct(
-  nGibbsUpdates  = 3e2,
+  nGibbsUpdates  = 2e4,
   seed           = 123,
   # seed to be fixed
   Hyperprior     = F,
   # learn hyperpar via full Bayes if  Hyperprior==T
-  niter_MH       = niter_MH,
+  niter_MH       = 1,
   # number of MH iterations for hyperpar update within each steps
   I_j_vec        = I_j_vec,
   Data_vec       = X_ji_vec,
@@ -91,12 +91,14 @@ init_all = HPYP_MCMC_fct(
   output         = "prob and last"
 )
 
+Hyperprior = T
+
 # Run MCMC
 out = HPYP_MCMC_fct(
-  nGibbsUpdates  = 1e4,
+  nGibbsUpdates  = 1e3,
   seed           = 123,
   # seed to be fixed
-  Hyperprior     = T,
+  Hyperprior     = Hyperprior,
   # learn hyperpar via full Bayes if  Hyperprior==T
   niter_MH       = niter_MH,
   # number of MH iterations for hyperpar update within each steps
@@ -137,14 +139,17 @@ which.max(colMeans(output_prob[burnin:nGibbsUpdates,]))
 colMeans(output_prob[burnin:nGibbsUpdates,])
 
 if(output=="all"){
-  ggplot(data = data.frame(cbind(iter_considered, output_prob)), 
+  P = ggplot(data = data.frame(cbind(iter_considered, output_prob)), 
          aes(x = iter_considered)) + 
     geom_line(aes(y = V2), col=1) + 
     geom_line(aes(y = V3), col=2) +
     geom_line(aes(y = V4), col=3) +
     labs(x="iter", y = "prob new") 
   
-  ggplot(data = 
+  print(P)
+
+  
+  P = ggplot(data = 
            data.frame(cbind(iter_considered, 
                             out$theta_vecAcrossGibbs[iter_considered,])), 
          aes(x = iter_considered)) + 
@@ -153,7 +158,9 @@ if(output=="all"){
     geom_line(aes(y = V4), col=3) +
     labs(x="iter", y = "thetaj") 
   
-  ggplot(data = 
+  print(P)
+  
+  P = ggplot(data = 
            data.frame(cbind(iter_considered, 
                             out$sigma_vecAcrossGibbs[iter_considered,])), 
          aes(x = iter_considered)) + 
@@ -162,21 +169,27 @@ if(output=="all"){
     geom_line(aes(y = V4), col=3) +
     labs(x="iter", y = "sigmaj") 
   
-  ggplot(data = 
+  print(P)
+  
+  P = ggplot(data = 
            data.frame(cbind(iter_considered, 
                             out$theta0AcrossGibbs[iter_considered])), 
          aes(x = iter_considered)) + 
     geom_line(aes(y = V2), col=1) + 
     labs(x="iter", y = "theta0") 
   
-  ggplot(data = 
+  print(P)
+  
+  P = ggplot(data = 
            data.frame(cbind(iter_considered, 
                             out$sigma0AcrossGibbs[iter_considered])), 
          aes(x = iter_considered)) + 
     geom_line(aes(y = V2), col=1) + 
     labs(x="iter", y = "sigma0") 
   
-  ggplot(data = 
+  print(P)
+  
+  P = ggplot(data = 
            data.frame(cbind(iter_considered, 
                       out$nTablesInRestaurantAcrossGibbs[iter_considered,])), 
          aes(x = iter_considered)) + 
@@ -184,16 +197,18 @@ if(output=="all"){
     geom_line(aes(y = V3), col=2) +
     geom_line(aes(y = V4), col=3) +
     labs(x="iter", y = "ntablesj") 
+  
+  print(P)
 }
 
 
-if(output=="all" && hyperprior){
+if(output=="all" && Hyperprior){
   Move_sigma_j_out = out$Move_sigma_j_out
-  rowMeans(Move_sigma_j_out)
+  print(rowMeans(Move_sigma_j_out))
   Move_theta_j_out = out$Move_theta_j_out
-  rowMeans(Move_theta_j_out)
-  out$Prop_sd_log_theta_j
-  out$Prop_sd_logit_sig_j
+  print(rowMeans(Move_theta_j_out))
+  # out$Prop_sd_log_theta_j
+  # out$Prop_sd_logit_sig_j
 }
 
 
