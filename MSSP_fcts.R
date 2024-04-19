@@ -353,7 +353,10 @@ HPYP_MCMC_fct = function(
     # Adaptive Metropolis quantities
     ada_step    = 50,
     ada_thresh  = 0.44,
-    r_ada       = 0
+    r_ada       = 0,
+    # Output prob new, prob new and last iteration 
+    #or additional values for checks
+    output   = c("prob_new", "prob and last", "all")
   ){
   
   # Functions to compute probabilities of possible past (for observed dish) tables 
@@ -392,16 +395,26 @@ HPYP_MCMC_fct = function(
   dishAllocation              = Data_vec
   nDishes                     = length(unique(Data_vec))
   
-  # Quantities for adaptive Metropolis quantities
-  Prop_sd_logit_sig_j = rep(0.01, nRest+1)
-  Move_sigma_j_out    = matrix(nrow=nRest+1, ncol=nGibbsUpdates)
-  Prop_sd_log_theta_j = rep(0.01, nRest+1)
-  Move_theta_j_out    = matrix(nrow=nRest+1, ncol=nGibbsUpdates)
-  # We can save less if needed e.g., matrix(nrow=J+1, ncol=ada_step)
+  if(Hyperprior){
+    # Quantities for adaptive Metropolis quantities
+    Prop_sd_logit_sig_j = rep(0.01, nRest+1)
+    Move_sigma_j_out    = matrix(nrow=nRest+1, ncol=nGibbsUpdates)
+    Prop_sd_log_theta_j = rep(0.01, nRest+1)
+    Move_theta_j_out    = matrix(nrow=nRest+1, ncol=nGibbsUpdates)
+    # We can save less if needed e.g., matrix(nrow=J+1, ncol=ada_step)
+  }
   
   # Quantities where to save output
-  # tableAllocationAcrossGibbs = matrix(0,nrow = nGibbsUpdates, ncol = n)
-  prob_new_species = matrix(0,nrow = nGibbsUpdates, ncol = length(I_j_vec))
+  prob_new_species = matrix(0,nrow = nGibbsUpdates, ncol = nRest)
+  
+  if(output=="all"){
+    tableAllocationAcrossGibbs = matrix(0, nrow = nGibbsUpdates, ncol = nObs)
+    theta_vecAcrossGibbs = matrix(0, nrow = nGibbsUpdates, ncol = nRest)
+    sigma_vecAcrossGibbs = matrix(0, nrow = nGibbsUpdates, ncol = nRest)
+    nTablesInRestaurantAcrossGibbs = matrix(0, nrow=nGibbsUpdates, ncol=nRest)
+    theta0AcrossGibbs = double(nGibbsUpdates)
+    sigma0AcrossGibbs = double(nGibbsUpdates)
+  }
   
   for (iter in 1:nGibbsUpdates) {
     ### ALLOCATE IN-SAMPLE OBSERVATIONS TO TABLES
@@ -696,10 +709,72 @@ HPYP_MCMC_fct = function(
       # End Update proposal adaptive MH steps
     }
     
-    # compute vector of probabilities of new species
+    # compute and save the vector of probabilities of new species
     prob_new_species[iter,] = prob_new_species_fct("HPYP")
+    
+    if(output=="all"){
+      tableAllocationAcrossGibbs[iter,] = tableAllocation
+      theta_vecAcrossGibbs[iter,] = theta_vec
+      sigma_vecAcrossGibbs[iter,] = sigma_vec
+      nTablesInRestaurantAcrossGibbs[iter,] = nTablesInRestaurant
+      theta0AcrossGibbs[iter] = theta0
+      sigma0AcrossGibbs[iter] = sigma0
+    }
   }
-  return(prob_new_species)
+  
+  ## Output
+  if(output=="all" && Hyperprior){
+    
+    return(list(
+      tableAllocationAcrossGibbs     = tableAllocationAcrossGibbs,
+      theta_vecAcrossGibbs           = theta_vecAcrossGibbs,
+      sigma_vecAcrossGibbs           = sigma_vecAcrossGibbs,
+      nTablesInRestaurantAcrossGibbs = nTablesInRestaurantAcrossGibbs,
+      theta0AcrossGibbs              = theta0AcrossGibbs,
+      sigma0AcrossGibbs              = sigma0AcrossGibbs,
+      prob_new_species               = prob_new_species,
+      Prop_sd_logit_sig_j            = Prop_sd_logit_sig_j,
+      Move_sigma_j_out               = Move_sigma_j_out,
+      Prop_sd_log_theta_j            = Prop_sd_log_theta_j,
+      Move_theta_j_out               = Move_theta_j_out))
+    
+  } else if (output=="all" && !Hyperprior){
+    
+    return(list(
+      tableAllocationAcrossGibbs     = tableAllocationAcrossGibbs,
+      theta_vecAcrossGibbs           = theta_vecAcrossGibbs,
+      sigma_vecAcrossGibbs           = sigma_vecAcrossGibbs,
+      nTablesInRestaurantAcrossGibbs = nTablesInRestaurantAcrossGibbs,
+      theta0AcrossGibbs              = theta0AcrossGibbs,
+      sigma0AcrossGibbs              = sigma0AcrossGibbs,
+      prob_new_species               = prob_new_species))
+  }
+  
+  else if (output=="prob_new"){
+    
+    return(prob_new_species)
+    
+  } else if (output=="prob and last"){
+  
+    return(list(
+      theta_vec                 = theta_vec,
+      sigma_vec                 = sigma_vec,
+      theta0                    = theta0,
+      sigma0                    = sigma0,
+      tablesValues              = tablesValues,
+      tableAllocation           = tableAllocation,
+      tableRestaurantAllocation = tableRestaurantAllocation,
+      nPeopleAtTable            = nPeopleAtTable,
+      nTables                   = nTables,
+      maxTableIndex             = maxTableIndex,
+      nTablesInRestaurant       = nTablesInRestaurant,
+      observationDishAllocation = observationDishAllocation,
+      nFreeTables               = nFreeTables,
+      freeTables                = freeTables,
+      prob_new_species          = prob_new_species))
+  } else {
+    print("no output")
+  }
 }
 
 

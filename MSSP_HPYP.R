@@ -55,7 +55,9 @@ shape_theta    = 1
 rate_theta     = 1
 a_sigma        = 1 
 b_sigma        = 1
-niter_MH       = 1
+niter_MH       = 5
+
+# save more quantities in MCMC for debugging and convergence checks
 
 
 #### Initialization Gibbs
@@ -69,10 +71,11 @@ init_all = initHSSP_fct(I_j_vec     = I_j_vec,
                         b_sigma     = b_sigma)
 
 
+output = "all"# c("prob_new", "prob and last", "all")
 
-
-output = HPYP_MCMC_fct(
-  nGibbsUpdates  = 1e4,
+# Run a short mcmc with fixed hyper par to better initialize the tables
+init_all = HPYP_MCMC_fct(
+  nGibbsUpdates  = 3e2,
   seed           = 123,
   # seed to be fixed
   Hyperprior     = F,
@@ -84,24 +87,114 @@ output = HPYP_MCMC_fct(
   shape_theta    = shape_theta, 
   rate_theta     = rate_theta, 
   a_sigma        = a_sigma, 
-  b_sigma        = b_sigma
+  b_sigma        = b_sigma,
+  output         = "prob and last"
+)
+
+# Run MCMC
+out = HPYP_MCMC_fct(
+  nGibbsUpdates  = 1e4,
+  seed           = 123,
+  # seed to be fixed
+  Hyperprior     = T,
+  # learn hyperpar via full Bayes if  Hyperprior==T
+  niter_MH       = niter_MH,
+  # number of MH iterations for hyperpar update within each steps
+  I_j_vec        = I_j_vec,
+  Data_vec       = X_ji_vec,
+  shape_theta    = shape_theta, 
+  rate_theta     = rate_theta, 
+  a_sigma        = a_sigma, 
+  b_sigma        = b_sigma,
+  output         = output
 )
 
 
-nGibbsUpdates = nrow(output)
-burnin        = min(nGibbsUpdates/2,500)
+
+# Additional checks and debugging
+if(output=="prob_new"){
+  output_prob = out
+} else {
+  output_prob = out$prob_new_species
+}
+
+
+nGibbsUpdates = nrow(output_prob)
+iter_considered = 1:nGibbsUpdates # iter_considered = burnin:nGibbsUpdates
 
 # Check predictive probabilities
-ggplot(data = data.frame(cbind(1:nGibbsUpdates,output)), aes(x = X1)) + 
-  geom_line(aes(y = X2), col=1) + 
-  geom_line(aes(y = X3), col=2) +
-  geom_line(aes(y = X4), col=3) +
-  labs(x="iter", y = "") 
+ggplot(data = data.frame(cbind(iter_considered, output_prob)), 
+       aes(x = iter_considered)) + 
+  geom_line(aes(y = V2), col=1) + 
+  geom_line(aes(y = V3), col=2) +
+  geom_line(aes(y = V4), col=3) +
+  labs(x="iter", y = "prob new") 
 
+
+burnin        = min(nGibbsUpdates/2,500)
 # Choose the optimal arm
-which.max(colMeans(output[burnin:nGibbsUpdates,]))
+which.max(colMeans(output_prob[burnin:nGibbsUpdates,]))
+colMeans(output_prob[burnin:nGibbsUpdates,])
 
-colMeans(output[burnin:nGibbsUpdates,])
+if(output=="all"){
+  ggplot(data = data.frame(cbind(iter_considered, output_prob)), 
+         aes(x = iter_considered)) + 
+    geom_line(aes(y = V2), col=1) + 
+    geom_line(aes(y = V3), col=2) +
+    geom_line(aes(y = V4), col=3) +
+    labs(x="iter", y = "prob new") 
+  
+  ggplot(data = 
+           data.frame(cbind(iter_considered, 
+                            out$theta_vecAcrossGibbs[iter_considered,])), 
+         aes(x = iter_considered)) + 
+    geom_line(aes(y = V2), col=1) + 
+    geom_line(aes(y = V3), col=2) +
+    geom_line(aes(y = V4), col=3) +
+    labs(x="iter", y = "thetaj") 
+  
+  ggplot(data = 
+           data.frame(cbind(iter_considered, 
+                            out$sigma_vecAcrossGibbs[iter_considered,])), 
+         aes(x = iter_considered)) + 
+    geom_line(aes(y = V2), col=1) + 
+    geom_line(aes(y = V3), col=2) +
+    geom_line(aes(y = V4), col=3) +
+    labs(x="iter", y = "sigmaj") 
+  
+  ggplot(data = 
+           data.frame(cbind(iter_considered, 
+                            out$theta0AcrossGibbs[iter_considered])), 
+         aes(x = iter_considered)) + 
+    geom_line(aes(y = V2), col=1) + 
+    labs(x="iter", y = "theta0") 
+  
+  ggplot(data = 
+           data.frame(cbind(iter_considered, 
+                            out$sigma0AcrossGibbs[iter_considered])), 
+         aes(x = iter_considered)) + 
+    geom_line(aes(y = V2), col=1) + 
+    labs(x="iter", y = "sigma0") 
+  
+  ggplot(data = 
+           data.frame(cbind(iter_considered, 
+                      out$nTablesInRestaurantAcrossGibbs[iter_considered,])), 
+         aes(x = iter_considered)) + 
+    geom_line(aes(y = V2), col=1) + 
+    geom_line(aes(y = V3), col=2) +
+    geom_line(aes(y = V4), col=3) +
+    labs(x="iter", y = "ntablesj") 
+}
+
+
+if(output=="all" && hyperprior){
+  Move_sigma_j_out = out$Move_sigma_j_out
+  rowMeans(Move_sigma_j_out)
+  Move_theta_j_out = out$Move_theta_j_out
+  rowMeans(Move_theta_j_out)
+  out$Prop_sd_log_theta_j
+  out$Prop_sd_logit_sig_j
+}
 
 
 
