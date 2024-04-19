@@ -75,7 +75,7 @@ output = "all"# c("prob_new", "prob and last", "all")
 
 # Run a short mcmc with fixed hyper par to better initialize the tables
 init_all = HPYP_MCMC_fct(
-  nGibbsUpdates  = 2e4,
+  nGibbsUpdates  = 2e3,
   seed           = 123,
   # seed to be fixed
   Hyperprior     = F,
@@ -95,7 +95,7 @@ Hyperprior = T
 
 # Run MCMC
 out = HPYP_MCMC_fct(
-  nGibbsUpdates  = 1e3,
+  nGibbsUpdates  = 1e4,
   seed           = 123,
   # seed to be fixed
   Hyperprior     = Hyperprior,
