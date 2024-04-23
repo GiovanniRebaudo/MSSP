@@ -68,9 +68,10 @@ K_j_vec_fct <- function(
     # vector of data ordered by groups i.e.,
     # X_{1,1}, ..., X_{I_1, 1}, ...., X_{1,J}, ..., X_{I_J, J}
                         ){
-  J = length(I_j_vec)
+  J           = length(I_j_vec)
+  cum_I_j_vec = cumsum(I_j_vec)
   K_j_vec = integer(J)
-  K_j_vec[1] = length(unique(Data_vec[1:I_j_vec[1]])) 
+  K_j_vec[1] = length(unique(Data_vec[1:I_j_vec[1]]))
   for(j in 1:J){
     lab_ji_vec = 1:I_j_vec[j]
     if(j!=1){lab_ji_vec = lab_ji_vec+cum_I_j_vec[j-1]}
@@ -93,6 +94,7 @@ emp_pEPPF_un_fct <- function(
   Xstar_d_vec  = unique(Data_vec)
   D            = length(Xstar_d_vec)
   emp_pEPPF_un = matrix(0, nrow=D, ncol=J)
+  cum_I_j_vec  = cumsum(I_j_vec)
   
   for(j in 1:J){
     lab_ji_vec = 1:I_j_vec[j]
@@ -170,7 +172,7 @@ initHSSP_fct <- function(I_j_vec,
     tableRestaurantAllocation = rep(1:nRest, times = I_j_vec)
     # allocation of the table to the restaurant
     
-    nPeopleAtTable            = rep(1,nObs)
+    nPeopleAtTable            = rep(1, nObs)
     # people sitting at each table
     
     nTables                   = nObs 
@@ -196,16 +198,19 @@ initHSSP_fct <- function(I_j_vec,
     K_j_vec_    = K_j_vec_fct(I_j_vec=I_j_vec, Data_vec=Data_vec)
     cum_K_j_vec = K_j_vec_$cum_K_j_vec
     K_j_vec     = K_j_vec_$K_j_vec
+    cum_I_j_vec = cumsum(I_j_vec)
     
     tableAllocation           = integer(nObs)
     for(j in 1:nRest){
       lab_ji_vec = 1:I_j_vec[j]
       past_K_j_vec = 0
       if(j!=1){
-        lab_ji_vec   = lab_ji_vec+cum_I_j_vec[j-1]
+        lab_ji_vec   = lab_ji_vec + cum_I_j_vec[j-1]
         past_K_j_vec = cum_K_j_vec[j-1]
       }
-      tableAllocation[lab_ji_vec] = Data_vec[lab_ji_vec] + past_K_j_vec
+      tableAllocation[lab_ji_vec] = 
+        as.integer(factor(Data_vec[lab_ji_vec], 
+                          levels = unique(Data_vec[lab_ji_vec]))) + past_K_j_vec
     }
     # allocation of customers to tables --> 
     # table indexes are global (across the franchise)

@@ -10,6 +10,7 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 library(salso)   
 library(ggplot2) 
 # Load functions
+source("MAB_functions.R")
 source("MSSP_fcts.R")
 Save_Plot = FALSE
 
@@ -37,6 +38,26 @@ set.seed(123)
 #   print("error: labels of dish are not ordered"); stop()}
 # if (J != length(I_j_vec)){print("error: J != length(I_j_vec)"); stop()}
 
+
+# generate true pmf
+truth_par = c(rep(1.3, 2), rep(2, 6))
+truth     = generate_zipf(param = truth_par, 
+                     tot_species = 3000, j_species = 2500, seed = 0)
+# how many new sample? 
+init_samples = 30
+new_samples  = 300
+
+# sample data
+J           = length(truth_par) 
+I_j_vec     = rep(init_samples, J)
+n           = sum(I_j_vec)
+data = c()
+for (j in 1:J){
+  data = c(data, sample_from_pop(j, truth, size = init_samples))
+}
+
+# rerorder species labels in order of arrival by group
+X_ji_vec = as.integer(factor(data, levels = unique(data)))
 
 ### Preliminaries and data summaries
 # Truth of in sample species
