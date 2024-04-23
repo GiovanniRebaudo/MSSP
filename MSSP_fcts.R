@@ -70,7 +70,7 @@ K_j_vec_fct <- function(
                         ){
   J = length(I_j_vec)
   K_j_vec = integer(J)
-  K_j_vec = unique(Data_vec[1:I_j_vec[1]]) 
+  K_j_vec[1] = length(unique(Data_vec[1:I_j_vec[1]])) 
   for(j in 1:J){
     lab_ji_vec = 1:I_j_vec[j]
     if(j!=1){lab_ji_vec = lab_ji_vec+cum_I_j_vec[j-1]}
