@@ -15,27 +15,27 @@ Save_Plot = FALSE
 
 set.seed(123)
 
-##### Multivariate species simulations/truth
-J           = 3 # Number of populations
-I_j_vec     = rep(100,J) 
-cum_I_j_vec = cumsum(I_j_vec)
-# I_j_vec = (I_1, ...,I_J) vector of sample size in different population
-n           = sum(I_j_vec) # tot number of observations
-
-# X_ji_vec = integer(n) 
-# Values of all observations (X_{1,1},...,X_{1,I_1},...,X_{J,1},...,X_{J,I_J})
-X_ji_vec = c(rep(1,I_j_vec[1]), # X_1i_vec = (X_{1,1},...,X_{1,I_1})
-             rep(c(rep(2,15),rep(3,20),rep(1,15)),2), # X_2i_vec
-             rep(1:10,10)) # X_3i_vec
-
-
-Xstar_d_vec = unique(X_ji_vec) # observed dishes (dishes=species)
-D           = length(Xstar_d_vec) # overall number of dishes
-# Check 
-if (n != length(X_ji_vec)){print("error: n != length(X_ji_vec)"); stop()}
-if (sum(Xstar_d_vec != 1:D)){
-  print("error: labels of dish are not ordered"); stop()}
-if (J != length(I_j_vec)){print("error: J != length(I_j_vec)"); stop()}
+# ##### Multivariate species simulations/truth
+# J           = 3 # Number of populations
+# I_j_vec     = rep(100,J) 
+# cum_I_j_vec = cumsum(I_j_vec)
+# # I_j_vec = (I_1, ...,I_J) vector of sample size in different population
+# n           = sum(I_j_vec) # tot number of observations
+# 
+# # X_ji_vec = integer(n) 
+# # Values of all observations (X_{1,1},...,X_{1,I_1},...,X_{J,1},...,X_{J,I_J})
+# X_ji_vec = c(rep(1,I_j_vec[1]), # X_1i_vec = (X_{1,1},...,X_{1,I_1})
+#              rep(c(rep(2,15),rep(3,20),rep(1,15)),2), # X_2i_vec
+#              rep(1:10,10)) # X_3i_vec
+# 
+# 
+# Xstar_d_vec = unique(X_ji_vec) # observed dishes (dishes=species)
+# D           = length(Xstar_d_vec) # overall number of dishes
+# # Check 
+# if (n != length(X_ji_vec)){print("error: n != length(X_ji_vec)"); stop()}
+# if (sum(Xstar_d_vec != 1:D)){
+#   print("error: labels of dish are not ordered"); stop()}
+# if (J != length(I_j_vec)){print("error: J != length(I_j_vec)"); stop()}
 
 
 ### Preliminaries and data summaries
@@ -55,7 +55,7 @@ shape_theta    = 1
 rate_theta     = 1
 a_sigma        = 1 
 b_sigma        = 1
-niter_MH       = 50
+niter_MH       = 5
 
 # save more quantities in MCMC for debugging and convergence checks
 

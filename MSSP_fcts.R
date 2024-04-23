@@ -618,7 +618,6 @@ HPYP_MCMC_fct = function(
             
             move_theta     = (log(runif(1)) < Acc_prob_theta)
             
-            theta_old = ifelse(move_theta, theta_prop, theta_old)
             if (move_theta){
               theta_old = theta_prop
               theta_vec[indexRestaurant] = theta_old
@@ -656,8 +655,8 @@ HPYP_MCMC_fct = function(
             Acc_prob_sigma = Acc_prob_sigma + 
               ell_j *(lgamma(1 - sigma_old) - 
                       lgamma(1 - sigma_prop))+
-              sum(lgamma(q_j_vec - sigma_prop) - 
-                  lgamma(q_j_vec - sigma_old))+
+              sum(lgamma(q_j_vec  - sigma_prop) - 
+                  lgamma(q_j_vec  - sigma_old))+
               sum(log(theta_old   + vec_1_to_ell_j_1 * sigma_prop) - 
                     log(theta_old + vec_1_to_ell_j_1 * sigma_old))
             # End Likelihood part
