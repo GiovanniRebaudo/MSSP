@@ -699,7 +699,6 @@ HPYP_MCMC_fct = function(
               # End Likelihood part
             }
 
-            
             move_sigma                = (log(runif(1)) < Acc_prob_sigma)
             
             if(move_sigma){
