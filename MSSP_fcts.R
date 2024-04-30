@@ -816,73 +816,111 @@ HPYP_MCMC_fct = function(
 
 ##
 
-# # Initialize (after a new observation is observed) the values of the MCMC 
-# # iterations given the last iteration of the previous MCMC 
-# initSeqHSSP_fct <- function(
-#     newPop                    = NA,
-#     newDataPoint              = NA,
-#     theta_vec                 = theta_vec,
-#     sigma_vec                 = sigma_vec,
-#     theta0                    = theta0,
-#     sigma0                    = sigma0,
-#     tablesValues              = tablesValues,
-#     tableAllocation           = tableAllocation,
-#     tableRestaurantAllocation = tableRestaurantAllocation,
-#     nPeopleAtTable            = nPeopleAtTable,
-#     nTables                   = nTables,
-#     maxTableIndex             = maxTableIndex,
-#     nTablesInRestaurant       = nTablesInRestaurant,
-#     observationDishAllocation = observationDishAllocation,
-#     nFreeTables               = nFreeTables,
-#     freeTables                = freeTables
-# ) {
-#   
-#   labels_1toIj     = 1:sum(I_j_vec[1:newPop])
-#   if(newPop==1){
-#     labels_Ij1toI_j = labels_1toIj
-#   } else {
-#     labels_Ij1toI_j = (sum(I_j_vec[1:(newPop-1)])+1):sum(I_j_vec[1:newPop])
-#   }
-#   
-#   # Add new data point
-#   Data_vec           = c(Data_vec[labels_1toIj], newDataPoint, 
-#                          Data_vec[-labels_1toIj])
-#   # I_j = I_j + 1
-#   I_j_vec[newPop]    = I_j_vec[newPop]+1
-#   
-#   if (newDataPoint %in% Data_vec[labels_Ij1toI_j]) {
-#     
-#     tablesValues              = tablesValues,
-#     tableAllocation           = tableAllocation,
-#     tableRestaurantAllocation = tableRestaurantAllocation,
-#     nPeopleAtTable            = nPeopleAtTable,
-#     nTables                   = nTables,
-#     maxTableIndex             = maxTableIndex,
-#     nTablesInRestaurant       = nTablesInRestaurant,
-#     observationDishAllocation = observationDishAllocation,
-#     nFreeTables               = nFreeTables,
-#     freeTables                = freeTables
-#     
-#   } else if (newDataPoint %in% observationDishAllocation) {
-#     
-#   } else {
-#     
-#   }
-#   
-#   return(
-#     list(theta_vec                 = theta_vec,
-#          sigma_vec                 = sigma_vec,
-#          theta0                    = theta0,
-#          sigma0                    = sigma0,
-#          tablesValues              = tablesValues,
-#          tableAllocation           = tableAllocation,
-#          tableRestaurantAllocation = tableRestaurantAllocation,
-#          nPeopleAtTable            = nPeopleAtTable,
-#          nTables                   = nTables,
-#          maxTableIndex             = maxTableIndex,
-#          nTablesInRestaurant       = nTablesInRestaurant,
-#          observationDishAllocation = observationDishAllocation,
-#          nFreeTables               = nFreeTables,
-#          freeTables                = freeTables)
-#   )
-# }
+# Initialize (after a new observation is observed) the values of the MCMC
+# iterations given the last iteration of the previous MCMC
+initSeqHSSP_fct <- function(
+    newPop                    = NA,
+    newDataPoint              = NA,
+    theta_vec                 = theta_vec,
+    sigma_vec                 = sigma_vec,
+    theta0                    = theta0,
+    sigma0                    = sigma0,
+    tablesValues              = tablesValues,
+    tableAllocation           = tableAllocation,
+    tableRestaurantAllocation = tableRestaurantAllocation,
+    nPeopleAtTable            = nPeopleAtTable,
+    nTables                   = nTables,
+    maxTableIndex             = maxTableIndex,
+    nTablesInRestaurant       = nTablesInRestaurant,
+    observationDishAllocation = observationDishAllocation,
+    nFreeTables               = nFreeTables,
+    freeTables                = freeTables
+) {
+
+  indexCustomerGlobal = sum(I_j_vec[1:newPop])+1
+                            
+  labels_1toIj     = 1:(indexCustomerGlobal-1)
+  if(newPop==1){
+    labels_Ij1toI_j = labels_1toIj
+  } else {
+    labels_Ij1toI_j = (sum(I_j_vec[1:(newPop-1)])+1):(indexCustomerGlobal-1)
+  }
+
+  # Add new data point
+  Data_vec           = c(Data_vec[labels_1toIj], newDataPoint,
+                         Data_vec[-labels_1toIj])
+  # I_j = I_j + 1
+  I_j_vec[newPop]    = I_j_vec[newPop]+1
+  
+  observationDishAllocation = Data_vec
+  
+  if (newDataPoint %in% Data_vec[labels_Ij1toI_j]) {
+    # If the dish of new obs is already available in the pop we do not add tables
+    tablesValues              = tablesValues
+    # Assign obs to the first table in the restaurant serving the dish
+    
+    currentTable = tableAllocation[labels_Ij1toI_j][
+      which(tableAllocation[labels_Ij1toI_j]==newDataPoint)[1] ]
+    tableAllocation           = c(tableAllocation[labels_1toIj],currentTable,
+                                  tableAllocation[-labels_1toIj])
+    
+    tableRestaurantAllocation = tableRestaurantAllocation
+    # allocation of the tables to the restaurant
+    # indecesTablesInRestaurant = 
+    #   (1:maxTableIndex)[tableRestaurantAllocation==newPop]
+    
+    nPeopleAtTable[currentTable] = nPeopleAtTable[currentTable] + 1
+    nTables                   = nTables
+    maxTableIndex             = maxTableIndex
+    nTablesInRestaurant       = nTablesInRestaurant
+    nFreeTables               = nFreeTables
+    freeTables                = freeTables
+
+  } else if (newDataPoint %in% observationDishAllocation) {
+    # If the dish of new obs is not available in the pop 
+    # but it is not a new dish overall
+    
+    # Assign obs to a new table
+    nTables = nTables + 1
+    nTablesInRestaurant[newPop] = 
+      nTablesInRestaurant[newPop] + 1
+    
+    ####### CONTINUO DA QUI ####
+    if(nFreeTables > 0) { # pick the first free table
+      newTableAllocation = freeTables[1]
+      freeTables = freeTables[-1]
+      nFreeTables = nFreeTables - 1
+      nPeopleAtTable[newTableAllocation] = 1
+      tablesValues[newTableAllocation] = dishAllocation[indexCustomerGlobal]
+    } else { # create a new table
+      maxTableIndex = maxTableIndex + 1
+      newTableAllocation = maxTableIndex
+      nPeopleAtTable = c(nPeopleAtTable,1)
+      tablesValues = c(tablesValues,dishAllocation[indexCustomerGlobal])
+    }
+    # assign the table to the restaurant
+    tableRestaurantAllocation[newTableAllocation] = indexRestaurant
+    
+    
+  } else {
+
+  }
+
+  return(
+    list(theta_vec                 = theta_vec,
+         sigma_vec                 = sigma_vec,
+         theta0                    = theta0,
+         sigma0                    = sigma0,
+         tablesValues              = tablesValues,
+         tableAllocation           = tableAllocation,
+         tableRestaurantAllocation = tableRestaurantAllocation,
+         nPeopleAtTable            = nPeopleAtTable,
+         nTables                   = nTables,
+         maxTableIndex             = maxTableIndex,
+         nTablesInRestaurant       = nTablesInRestaurant,
+         observationDishAllocation = observationDishAllocation,
+         nFreeTables               = nFreeTables,
+         freeTables                = freeTables)
+  )
+}
+

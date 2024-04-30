@@ -120,7 +120,7 @@ out = HPYP_MCMC_fct(
   seed           = 123,
   # seed to be fixed
   Hyperprior     = Hyperprior,
-  # learn hyperpar via full Bayes if  Hyperprior==T
+  # learn hyperpar via full Bayes if Hyperprior==T
   niter_MH       = niter_MH,
   # number of MH iterations for hyperpar update within each steps
   I_j_vec        = I_j_vec,
