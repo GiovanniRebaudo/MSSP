@@ -498,7 +498,10 @@ HPYP_MCMC_fct = function(
     
     if(Hyperprior){
       # MH within Gibbs step for hyperparameters
-      vec_1_to_D_1 = 1:(nDishes-1)
+      if(nDishes>1){
+        vec_1_to_D_1 = 1:(nDishes-1)
+      }
+
       
       ell_d_vec = integer(nDishes)
       for (d in unique(dishAllocation)){
@@ -526,12 +529,18 @@ HPYP_MCMC_fct = function(
             rate_theta*(theta_old-theta_prop)
           
           # Likelihood part
+          if(nDishes>1){
+            Acc_prob_theta = Acc_prob_theta +
+              sum(log(theta_prop + vec_1_to_D_1 * sigma_old) - 
+                    log(theta_old  + vec_1_to_D_1 * sigma_old)) +
+              lgamma(theta_old + nTables) - lgamma(theta_prop + nTables) +
+              lgamma(theta_prop +1)       - lgamma(theta_old +1)
+          } else {
+            Acc_prob_theta = Acc_prob_theta +
+              lgamma(theta_old + nTables) - lgamma(theta_prop + nTables) +
+              lgamma(theta_prop +1)       - lgamma(theta_old +1)
+          }
           
-          Acc_prob_theta = Acc_prob_theta +
-            sum(log(theta_prop + vec_1_to_D_1 * sigma_old) - 
-                log(theta_old  + vec_1_to_D_1 * sigma_old)) +
-            lgamma(theta_old + nTables) - lgamma(theta_prop + nTables) +
-            lgamma(theta_prop +1)       - lgamma(theta_old +1)
           
           
           move_theta         = (log(runif(1)) < Acc_prob_theta)
@@ -563,13 +572,22 @@ HPYP_MCMC_fct = function(
             b_sigma*(log(1-sigma_prop) - log(1-sigma_old))
           
           # Likelihood part (it can be made slightly more effiecient TBD)
-          Acc_prob_sigma = Acc_prob_sigma + 
-            nDishes * (lgamma(1-sigma_old) - 
-                       lgamma(1-sigma_prop)) +
-            sum(log(theta0 + vec_1_to_D_1 * sigma_prop) - 
-                log(theta0 + vec_1_to_D_1 * sigma_old)) +
-            sum(lgamma(ell_d_vec - sigma_prop) - 
-                lgamma(ell_d_vec - sigma_old))
+          if(nDishes>1){
+            Acc_prob_sigma = Acc_prob_sigma + 
+              nDishes * (lgamma(1-sigma_old) - 
+                           lgamma(1-sigma_prop)) +
+              sum(log(theta0 + vec_1_to_D_1 * sigma_prop) - 
+                    log(theta0 + vec_1_to_D_1 * sigma_old)) +
+              sum(lgamma(ell_d_vec - sigma_prop) - 
+                    lgamma(ell_d_vec - sigma_old))
+          } else {
+            Acc_prob_sigma = Acc_prob_sigma + 
+              nDishes * (lgamma(1-sigma_old) - 
+                           lgamma(1-sigma_prop)) +
+              sum(lgamma(ell_d_vec - sigma_prop) - 
+                    lgamma(ell_d_vec - sigma_old))
+          }
+
 
           # End Likelihood part
           
@@ -609,9 +627,10 @@ HPYP_MCMC_fct = function(
               rate_theta*(theta_old-theta_prop)
             
             # Quantities useful in the log Likelihood part (PYP log EPPF)
-            ell_j            = nTablesInRestaurant[indexRestaurant]
-            vec_1_to_ell_j_1 = 1:(ell_j-1)
             I_j              = I_j_vec[indexRestaurant]
+            ell_j            = nTablesInRestaurant[indexRestaurant]
+            if(ell_j>1){
+              vec_1_to_ell_j_1 = 1:(ell_j-1)
             
             # Likelihood part (PYP log EPPF)
             Acc_prob_theta = Acc_prob_theta +
@@ -620,6 +639,11 @@ HPYP_MCMC_fct = function(
               lgamma(theta_old + I_j) - lgamma(theta_prop + I_j) +
               lgamma(theta_prop +1)   - lgamma(theta_old +1)
             # End: Likelihood part (PYP log EPPF)
+            } else {
+              Acc_prob_theta = Acc_prob_theta +
+                lgamma(theta_old + I_j) - lgamma(theta_prop + I_j) +
+                lgamma(theta_prop +1)   - lgamma(theta_old +1)
+            }
             
             move_theta     = (log(runif(1)) < Acc_prob_theta)
             
@@ -657,14 +681,24 @@ HPYP_MCMC_fct = function(
               (1:maxTableIndex)[tableRestaurantAllocation==indexRestaurant]
             q_j_vec = nPeopleAtTable[indecesTablesInRestaurant]
             
-            Acc_prob_sigma = Acc_prob_sigma + 
-              ell_j * (lgamma(1 - sigma_old) - 
-                       lgamma(1 - sigma_prop)) +
-              sum(lgamma(q_j_vec  - sigma_prop) - 
-                  lgamma(q_j_vec  - sigma_old)) +
-              sum(log(theta_old   + vec_1_to_ell_j_1 * sigma_prop) - 
-                    log(theta_old + vec_1_to_ell_j_1 * sigma_old))
-            # End Likelihood part
+            if(ell_j>1){
+              Acc_prob_sigma = Acc_prob_sigma + 
+                ell_j * (lgamma(1 - sigma_old) - 
+                           lgamma(1 - sigma_prop)) +
+                sum(lgamma(q_j_vec  - sigma_prop) - 
+                      lgamma(q_j_vec  - sigma_old)) +
+                sum(log(theta_old   + vec_1_to_ell_j_1 * sigma_prop) - 
+                      log(theta_old + vec_1_to_ell_j_1 * sigma_old))
+              # End Likelihood part
+            } else {
+              Acc_prob_sigma = Acc_prob_sigma + 
+                ell_j * (lgamma(1 - sigma_old) - 
+                           lgamma(1 - sigma_prop)) +
+                sum(lgamma(q_j_vec  - sigma_prop) - 
+                      lgamma(q_j_vec  - sigma_old))
+              # End Likelihood part
+            }
+
             
             move_sigma                = (log(runif(1)) < Acc_prob_sigma)
             
