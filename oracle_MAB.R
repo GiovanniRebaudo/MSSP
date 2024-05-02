@@ -1,0 +1,72 @@
+#Oracle_MAB: Multi arm bandit with oracle knowledge of the distributions
+#           returns the cumulative number of species discovered
+oracle_MAB<- function(data,
+                      init_samples = 30, new_samples = 300, 
+                      seed = 0){
+  ## returns the cumulative number of species discovered
+  ##inputs: 
+  ##  data = list of J pmfs
+  ##  a,b = hyperparameters of the gamma prior on the concentration params
+  ##  init_samples = number of starting observations for the MAB
+  ##  new_samples = number of sampling step of the MAB
+  ##  burnin = length of butnin of each MCMC
+  ##  iter = number of iter after burnin of each MCMC
+  ##  seed 
+  
+  # Initializes the progress bar
+  pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
+                       max = new_samples, # Maximum value of the progress bar
+                       style = 3,    # Progress bar style (also available style = 1 and style = 2)
+                       width = 50,   # Progress bar width. Defaults to getOption("width")
+                       char = "=")   # Character used to create the bar
+  
+  
+  species_discovered = rep(0, new_samples) #vector to save the num of discoveries
+  
+  set.seed(seed)
+  J = length(data) #tot number of populations
+  
+  X = matrix(NA,nrow = J, 
+             ncol = init_samples + new_samples) #matrix of observations X[j,i]is X_{j,i}
+  
+  #sample initial observations
+  for(j in 1:J){
+    X[j, 1:init_samples] = sample_from_pop(j, data, size = init_samples) 
+  }
+  
+  I = rep(init_samples, J) #initial sample sizes
+  
+  #normalise data (which is up to norm costant)
+  for(j in 1:J){
+    data[[j]] = data[[j]] / sum(data[[j]])
+  }
+  for(newobs in 1:new_samples){ #MAB for cycle
+    
+    #normalise data (which is up to norm costant)
+    
+    #estimate prediction prob
+    est_prob = NULL
+    for(j in 1:J){
+      est_prob = c(est_prob, sum(data[[j]][-X[j,!is.na(X[j,])]]))
+    }
+    #print(est_prob)
+    where_vec = which(est_prob == max(est_prob))
+    where = ifelse(length(where_vec)>1, sample(where_vec,1), where_vec)
+    
+    #sample a new observation
+    x = sample_from_pop(where, data)
+    
+    #check if species is new
+    species_discovered[newobs] = !(x %in% X)
+    
+    #print(c(where,species_discovered[newobs]))
+    #add it to the sample
+    X[where, I[where]+1] = x
+    I[where] = I[where] + 1
+    
+    setTxtProgressBar(pb, newobs)
+  }#for MAB
+  
+  return(cumsum(species_discovered))
+}#function
+
