@@ -143,6 +143,12 @@ initHSSP_fct <- function(I_j_vec,
   # number of dishes served in the franchise
   dishAllocation            = Data_vec
   
+  observationDishAllocation = integer(nDishes)
+  for(lab_dish in 1:nDishes){
+    observationDishAllocation[lab_dish] = sum(Data_vec==lab_dish)
+  }
+  # how many people are eating a certain dish
+  
   if(model =="HPYP"){
     ##### INITIALIZATION OF HYPERPARAMETERS WITH THEIR PRIOR MEANS
     theta_vec = rep(shape_theta/rate_theta, nRest)
@@ -183,9 +189,6 @@ initHSSP_fct <- function(I_j_vec,
     
     nTablesInRestaurant       = I_j_vec
     # contains only the number of occupied tables in each restaurant
-    
-    observationDishAllocation = Data_vec
-    # how many people are eating a certain dish
     
     ###
     nFreeTables = 0
@@ -239,12 +242,6 @@ initHSSP_fct <- function(I_j_vec,
     nTablesInRestaurant       = K_j_vec
     # contains only the number of occupied tables in each restaurant
     
-    observationDishAllocation = integer(nDishes)
-    for(lab_dish in 1:nDishes){
-      observationDishAllocation[lab_dish] = sum(Data_vec==lab_dish)
-    }
-    
-    # how many people are eating a certain dish
     ###
     nFreeTables = 0
     freeTables = c() # indices of free tables CONSIDER USING A STACK
@@ -807,6 +804,7 @@ HPYP_MCMC_fct = function(
       observationDishAllocation = observationDishAllocation,
       nFreeTables               = nFreeTables,
       freeTables                = freeTables,
+      dishAllocation            = dishAllocation,
       prob_new_species          = prob_new_species))
   } else {
     print("no output")
@@ -821,20 +819,21 @@ HPYP_MCMC_fct = function(
 initSeqHSSP_fct <- function(
     newPop                    = NA,
     newDataPoint              = NA,
-    theta_vec                 = theta_vec,
-    sigma_vec                 = sigma_vec,
-    theta0                    = theta0,
-    sigma0                    = sigma0,
-    tablesValues              = tablesValues,
-    tableAllocation           = tableAllocation,
-    tableRestaurantAllocation = tableRestaurantAllocation,
-    nPeopleAtTable            = nPeopleAtTable,
-    nTables                   = nTables,
-    maxTableIndex             = maxTableIndex,
-    nTablesInRestaurant       = nTablesInRestaurant,
-    observationDishAllocation = observationDishAllocation,
-    nFreeTables               = nFreeTables,
-    freeTables                = freeTables
+    theta_vec                 = out$theta_vec,
+    sigma_vec                 = out$sigma_vec,
+    theta0                    = out$theta0,
+    sigma0                    = out$sigma0,
+    tablesValues              = out$tablesValues,
+    tableAllocation           = out$tableAllocation,
+    tableRestaurantAllocation = out$tableRestaurantAllocation,
+    nPeopleAtTable            = out$nPeopleAtTable,
+    nTables                   = out$nTables,
+    maxTableIndex             = out$maxTableIndex,
+    nTablesInRestaurant       = out$nTablesInRestaurant,
+    observationDishAllocation = out$observationDishAllocation,
+    nFreeTables               = out$nFreeTables,
+    freeTables                = out$freeTables,
+    dishAllocation            = out$dishAllocation
 ) {
 
   indexCustomerGlobal = sum(I_j_vec[1:newPop])+1
@@ -847,12 +846,12 @@ initSeqHSSP_fct <- function(
   }
 
   # Add new data point
-  Data_vec           = c(Data_vec[labels_1toIj], newDataPoint,
-                         Data_vec[-labels_1toIj])
+  Data_vec           = c(dishAllocation[labels_1toIj], newDataPoint,
+                         dishAllocation[-labels_1toIj])
   # I_j = I_j + 1
   I_j_vec[newPop]    = I_j_vec[newPop]+1
   
-  observationDishAllocation = Data_vec
+  DishAllocation = Data_vec
   
   if (newDataPoint %in% Data_vec[labels_Ij1toI_j]) {
     # If the dish of new obs is already available in the pop we do not add tables
@@ -868,6 +867,7 @@ initSeqHSSP_fct <- function(
     # allocation of the tables to the restaurant
     # indecesTablesInRestaurant = 
     #   (1:maxTableIndex)[tableRestaurantAllocation==newPop]
+    
     
     nPeopleAtTable[currentTable] = nPeopleAtTable[currentTable] + 1
     nTables                   = nTables
@@ -885,7 +885,6 @@ initSeqHSSP_fct <- function(
     nTablesInRestaurant[newPop] = 
       nTablesInRestaurant[newPop] + 1
     
-    ####### CONTINUO DA QUI ####
     if(nFreeTables > 0) { # pick the first free table
       newTableAllocation = freeTables[1]
       freeTables = freeTables[-1]
@@ -896,18 +895,43 @@ initSeqHSSP_fct <- function(
       maxTableIndex = maxTableIndex + 1
       newTableAllocation = maxTableIndex
       nPeopleAtTable = c(nPeopleAtTable,1)
-      tablesValues = c(tablesValues,dishAllocation[indexCustomerGlobal])
+      tablesValues = c(tablesValues, dishAllocation[indexCustomerGlobal])
     }
     # assign the table to the restaurant
     tableRestaurantAllocation[newTableAllocation] = indexRestaurant
     
-    
   } else {
-
+    # If the dish is a new dish overall
+    # Assign obs to a new table
+    nTables = nTables + 1
+    nTablesInRestaurant[newPop] = 
+      nTablesInRestaurant[newPop] + 1
+    
+    if(nFreeTables > 0) { # pick the first free table
+      newTableAllocation = freeTables[1]
+      freeTables = freeTables[-1]
+      nFreeTables = nFreeTables - 1
+      nPeopleAtTable[newTableAllocation] = 1
+      tablesValues[newTableAllocation] = dishAllocation[indexCustomerGlobal]
+    } else { # create a new table
+      maxTableIndex = maxTableIndex + 1
+      newTableAllocation = maxTableIndex
+      nPeopleAtTable = c(nPeopleAtTable,1)
+      tablesValues = c(tablesValues, dishAllocation[indexCustomerGlobal])
+    }
+    # assign the table to the restaurant
+    tableRestaurantAllocation[newTableAllocation] = indexRestaurant
+  }
+  
+  nDishes = length(unique(dishAllocation))
+  observationDishAllocation = integer(nDishes)
+  for(lab_dish in 1:nDishes){
+    observationDishAllocation[lab_dish] = sum(Data_vec==lab_dish)
   }
 
   return(
-    list(theta_vec                 = theta_vec,
+    list(I_j_vec                   = I_j_vec,
+         theta_vec                 = theta_vec,
          sigma_vec                 = sigma_vec,
          theta0                    = theta0,
          sigma0                    = sigma0,
@@ -919,8 +943,15 @@ initSeqHSSP_fct <- function(
          maxTableIndex             = maxTableIndex,
          nTablesInRestaurant       = nTablesInRestaurant,
          observationDishAllocation = observationDishAllocation,
+         DishAllocation            = DishAllocation,
          nFreeTables               = nFreeTables,
          freeTables                = freeTables)
   )
 }
 
+
+### HPYP MAB
+
+#plusPY_MAB<- function(data, datanew){
+  
+#}

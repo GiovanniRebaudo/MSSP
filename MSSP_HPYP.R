@@ -9,8 +9,9 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 library(salso)   
 library(ggplot2) 
+library(plyr)
 # Load functions
-source("MAB_functions.R")
+source("utils.R")
 source("MSSP_fcts.R")
 Save_Plot = FALSE
 
@@ -52,12 +53,22 @@ J           = length(truth_par)
 I_j_vec     = rep(init_samples, J)
 n           = sum(I_j_vec)
 data = c()
+dataNewLs = list()
 for (j in 1:J){
-  data = c(data, sample_from_pop(j, truth, size = init_samples))
+  dataj =  sample_from_pop(j, truth, size = init_samples+new_samples)
+  data = c(data, dataj[1:init_samples])
+  dataNewLs[[j]] = dataj[(init_samples+1):new_samples]
 }
 
-# rerorder species labels in order of arrival by group
+# Rerorder species labels in order of arrival by group
 X_ji_vec = as.integer(factor(data, levels = unique(data)))
+for (j in 1:J){
+  dataNewLs[[j]] = plyr::mapvalues(dataNewLs[[j]], 
+                                   from = unique(data), 
+                                   to   = unique(X_ji_vec))
+}
+
+
 
 ### Preliminaries and data summaries
 # Truth of in sample species
@@ -79,8 +90,9 @@ b_sigma        = 1
 niter_MH       = 5
 
 # save more quantities in MCMC for debugging and convergence checks
+species_discovered = logical(new_samples)
 
-
+if(F){
 #### Initialization Gibbs
 init_all = initHSSP_fct(I_j_vec     = I_j_vec, 
                         Data_vec    = X_ji_vec,
@@ -232,6 +244,95 @@ if(output=="all" && Hyperprior){
   # out$Prop_sd_logit_sig_j
 }
 
+}
+
+
+####### MAB
+#### Initialization Gibbs
+init_all = initHSSP_fct(I_j_vec     = I_j_vec, 
+                        Data_vec    = X_ji_vec,
+                        tablesInit  = "equal", # "separate"
+                        model       = "HPYP",
+                        shape_theta = shape_theta, 
+                        rate_theta  = rate_theta, 
+                        a_sigma     = a_sigma, 
+                        b_sigma     = b_sigma)
+
+# Run a short mcmc with fixed hyper par to better initialize the tables
+init_all = HPYP_MCMC_fct(
+  nGibbsUpdates  = 2e3,
+  seed           = 123,
+  # seed to be fixed
+  Hyperprior     = F,
+  # learn hyperpar via full Bayes if  Hyperprior==T
+  niter_MH       = 1,
+  # number of MH iterations for hyperpar update within each steps
+  I_j_vec        = I_j_vec,
+  Data_vec       = X_ji_vec,
+  shape_theta    = shape_theta, 
+  rate_theta     = rate_theta, 
+  a_sigma        = a_sigma, 
+  b_sigma        = b_sigma,
+  output         = "prob and last"
+)
+
+# Run MCMC
+out = HPYP_MCMC_fct(
+  nGibbsUpdates  = 4e3,
+  seed           = 123,
+  # seed to be fixed
+  Hyperprior     = T,
+  # learn hyperpar via full Bayes if Hyperprior==T
+  niter_MH       = niter_MH,
+  # number of MH iterations for hyperpar update within each steps
+  I_j_vec        = I_j_vec,
+  Data_vec       = X_ji_vec,
+  shape_theta    = shape_theta, 
+  rate_theta     = rate_theta, 
+  a_sigma        = a_sigma, 
+  b_sigma        = b_sigma,
+  output         = "prob and last"
+)
+
+for (iter_new in 1:new_samples){
+  # save 
+  prob_new_species = out$prob_new_species
+  DishAllocation   = out$DishAllocation
+  
+  #
+  nGibbsUpd = nrow(prob_new_species)
+  burnin    = min(1000, nGibbsUpd/2)
+  # Choose optimal arm
+  newj = which.max(colMeans(prob_new_species[burnin:nGibbsUpd,]))
+  # Pick new obs
+  newObs = dataNewLs[[newj]][iter_new]
+  
+  # Check if a new species is discovered
+  species_discovered[iter_new] = !(newObs %in% DishAllocation)
+  
+  init_all = initSeqHSSP_fct(newPop = newj,
+                             newDataPoint = newObs)
+  
+  if(iter_new<new_samples){
+    # Run MCMC
+    out = HPYP_MCMC_fct(
+      nGibbsUpdates  = 4e2,
+      seed           = 123,
+      # seed to be fixed
+      Hyperprior     = T,
+      # learn hyperpar via full Bayes if Hyperprior==T
+      niter_MH       = niter_MH,
+      # number of MH iterations for hyperpar update within each steps
+      I_j_vec        = init_all$I_j_vec,
+      Data_vec       = init_all$DishAllocation,
+      shape_theta    = shape_theta, 
+      rate_theta     = rate_theta, 
+      a_sigma        = a_sigma, 
+      b_sigma        = b_sigma,
+      output         = "prob and last"
+    )
+  }
+}
 
 
 
