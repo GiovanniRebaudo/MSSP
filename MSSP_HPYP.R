@@ -60,7 +60,7 @@ for (j in 1:J){
   dataNewLs[[j]] = dataj[(init_samples+1):new_samples]
 }
 
-# Rerorder species labels in order of arrival by group
+# Reorder species labels in order of arrival by group
 X_ji_vec = as.integer(factor(data, levels = unique(data)))
 for (j in 1:J){
   dataNewLs[[j]] = plyr::mapvalues(dataNewLs[[j]], 
@@ -310,7 +310,21 @@ for (iter_new in 1:new_samples){
   newObs = dataNewLs[[newj]][iter_new]
   
   # Check if a new species is discovered
-  species_discovered[iter_new] = !(newObs %in% dishAllocation)
+  species_new = !(newObs %in% dishAllocation)
+  species_discovered[iter_new] = species_new
+  
+  if (species_new){
+    # Relabel the dishes if new dish
+    newObsLab = max(dishAllocation)+1
+    for (j in 1:J){
+      dataNewLs[[j]] = plyr::mapvalues(dataNewLs[[j]], 
+                                       from = newObs, 
+                                       to   = newObsLab)
+    }
+    newObs = newObsLab
+  }
+
+
   
   init_all = initSeqHSSP_fct(newPop = newj,
                              newDataPoint = newObs)

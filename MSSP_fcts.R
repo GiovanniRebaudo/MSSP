@@ -844,7 +844,7 @@ initSeqHSSP_fct <- function(
   } else {
     labels_Ij1toI_j = (sum(I_j_vec[1:(newPop-1)])+1):(indexCustomerGlobal-1)
   }
-
+  
   # Add new data point
   Data_vec           = c(dishAllocation[labels_1toIj], newDataPoint,
                          dishAllocation[-labels_1toIj])
@@ -867,8 +867,6 @@ initSeqHSSP_fct <- function(
     
     tableRestaurantAllocation = tableRestaurantAllocation
     # allocation of the tables to the restaurant
-    # indecesTablesInRestaurant = 
-    #   (1:maxTableIndex)[tableRestaurantAllocation==newPop]
     
     
     nPeopleAtTable[currentTable] = nPeopleAtTable[currentTable] + 1
@@ -878,9 +876,8 @@ initSeqHSSP_fct <- function(
     nFreeTables               = nFreeTables
     freeTables                = freeTables
 
-  } else if (newDataPoint %in% observationDishAllocation) {
+  } else {
     # If the dish of new obs is not available in the pop 
-    # but it is not a new dish overall
     
     # Assign obs to a new table
     nTables = nTables + 1
@@ -902,34 +899,11 @@ initSeqHSSP_fct <- function(
     # assign the table to the restaurant
     tableRestaurantAllocation[newTableAllocation] = newPop
 
-    
-  } else {
-    # If the dish is a new dish overall
-    # Assign obs to a new table
-    nTables = nTables + 1
-    nTablesInRestaurant[newPop] = 
-      nTablesInRestaurant[newPop] + 1
-    
-    if(nFreeTables > 0) { # pick the first free table
-      newTableAllocation = freeTables[1]
-      freeTables = freeTables[-1]
-      nFreeTables = nFreeTables - 1
-      nPeopleAtTable[newTableAllocation] = 1
-      tablesValues[newTableAllocation] = dishAllocation[indexCustomerGlobal]
-    } else { # create a new table
-      maxTableIndex = maxTableIndex + 1
-      newTableAllocation = maxTableIndex
-      nPeopleAtTable = c(nPeopleAtTable,1)
-      tablesValues = c(tablesValues, dishAllocation[indexCustomerGlobal])
+    nDishes = length(unique(dishAllocation))
+    observationDishAllocation = integer(nDishes)
+    for(lab_dish in 1:nDishes){
+      observationDishAllocation[lab_dish] = sum(Data_vec==lab_dish)
     }
-    # assign the table to the restaurant
-    tableRestaurantAllocation[newTableAllocation] = newPop
-  }
-  
-  nDishes = length(unique(dishAllocation))
-  observationDishAllocation = integer(nDishes)
-  for(lab_dish in 1:nDishes){
-    observationDishAllocation[lab_dish] = sum(Data_vec==lab_dish)
   }
 
   return(
