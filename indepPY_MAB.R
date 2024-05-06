@@ -82,7 +82,11 @@ indepPY_MAB<- function(data, a_alpha = 1, b_alpha = 1,
       temp = X[j, !is.na(X[j,])]
       n_temp = I[j]
         
-      vec_1_to_D_1 = ifelse(nDishes[j]>1, (1:(nDishes[j]-1)), 1)
+      if(nDishes[j]>1){
+        vec_1_to_D_1 = (1:(nDishes[j]-1))
+      }else{
+        vec_1_to_D_1 = 1
+      }
       ell_d_vec = table(temp)
           
       for (iter_MH in 1:niter_MH){
@@ -159,8 +163,9 @@ indepPY_MAB<- function(data, a_alpha = 1, b_alpha = 1,
         sigma[j] = sigma_old
         
         #compute the prediction probabilities
+        if(j == J){
         prob_new_species[iter_MH,] =  
-          (alpha + sigma*nDishes) / (alpha + I)
+          (alpha + sigma*nDishes) / (alpha + I)}
         Move_alpha_j_out[j, iter_MH] = move_alpha
         Move_sigma_j_out[j, iter_MH] = move_sigma
         

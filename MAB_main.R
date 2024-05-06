@@ -66,7 +66,7 @@ results_plusPY = 0
 results_indepDP = 0
 results_indepPY = 0
 results_random  = 0
-results_oracle  = 0
+results_oracle  = matrix(NA, nrow = new_samples, ncol = tot_replica)
 est_prob_new_plusDP = vector("list", tot_replica)
 est_prob_new_plusPY = vector("list", tot_replica)
 est_prob_new_indepDP = vector("list", tot_replica)
@@ -74,8 +74,12 @@ est_prob_new_indepPY = vector("list", tot_replica)
 est_prob_new_oracle = vector("list", tot_replica)
 
 ###############gibbs samplers
+replica = 0
 for(seed in 1:tot_replica){
-  cat("\nReplica", seed, "out of", tot_replica, "\n")
+  
+  replica = replica + 1
+  
+  cat("\nReplica", replica, "out of", tot_replica, "\n")
   
   ###############sample observations for fair comparison of methods
   X = sample_from_pop_all(truth = pmfs, size = init_samples + new_samples,
@@ -84,24 +88,24 @@ for(seed in 1:tot_replica){
   #solve MAB decisions via plusDP
   results_plusDP_temp = plusDP_MAB(data = X, new_samples = new_samples, 
                                    seed = 0)
-  results_plusDP = results_plusDP + results_plusDP_temp$discoveries
+  results_plusDP[,seed] = results_plusDP_temp$discoveries
   est_prob_new_plusDP[[seed]] = results_plusDP_temp$probs
   
   #solve MAB decisions via plusPY
   results_plusPY_temp = plusPY_MAB(data = X, new_samples = new_samples, 
                                    seed = 0)
-  results_plusPY =  results_plusPY + results_plusPY_temp$discoveries
+  results_plusPY[,seed] = results_plusPY_temp$discoveries
   est_prob_new_plusPY[[seed]] = results_plusPY_temp$probs
   
   #solve MAB decisions via indepDP
   results_indepDP_temp = indepDP_MAB(data = X, new_samples = new_samples, 
                                      seed = 0)
-  results_indepDP = results_indepDP + results_indepDP_temp$discoveries
+  results_indepDP[,seed] = results_indepDP_temp$discoveries
   est_prob_new_indepDP[[seed]] = results_indepDP_temp$probs
   
   #solve MAB decisions via indepPY (not available)
   results_indepPY_temp = indepPY_MAB(data = X, new_samples = new_samples, seed = 0)
-  results_indepPY = results_indepPY + results_indepPY_temp$discoveries
+  results_indepPY[,seed] = results_indepPY_temp$discoveries
   est_prob_new_indepPY[[seed]] = results_indepPY_temp$probs
   
   #solve MAB decisions via plusMD (not available)
@@ -113,16 +117,16 @@ for(seed in 1:tot_replica){
   results_random = results_random + results_random_temp$discoveries
 
   results_oracle_temp = oracle_MAB(data = X, pmfs = pmfs)
-  results_oracle = results_oracle + results_oracle_temp$discoveries
+  results_oracle[,seed] = results_oracle_temp$discoveries
   est_prob_new_oracle[[seed]] = results_oracle_temp$probs
 }
 
-results_plusDP = results_plusDP / tot_replica
-results_plusPY = results_plusPY / tot_replica
-results_indepDP = results_indepDP / tot_replica
-results_indepPY = results_indepPY / tot_replica
-results_random  = results_random / tot_replica
-results_oracle  = results_oracle / tot_replica
+results_plusDP = rowMeans( results_plusDP )
+results_plusPY = rowMeans( results_plusPY )
+results_indepDP = rowMeans( results_indepDP )
+results_indepPY = rowMeans( results_indepPY )
+results_random  = rowMeans( results_random )
+results_oracle  = rowMeans( results_oracle )
 
 
 ################################################################################
