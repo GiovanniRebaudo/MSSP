@@ -294,6 +294,8 @@ out = HPYP_MCMC_fct(
   output         = "prob and last"
 )
 
+
+
 for (iter_new in 1:new_samples){
   # save 
   prob_new_species = out$prob_new_species
@@ -321,7 +323,7 @@ for (iter_new in 1:new_samples){
       # seed to be fixed
       Hyperprior     = T,
       # learn hyperpar via full Bayes if Hyperprior==T
-      niter_MH       = niter_MH,
+      niter_MH       = 1,
       # number of MH iterations for hyperpar update within each steps
       I_j_vec        = init_all$I_j_vec,
       Data_vec       = init_all$DishAllocation,
