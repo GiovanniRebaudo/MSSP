@@ -1,17 +1,26 @@
 #Oracle_MAB: Multi arm bandit with oracle knowledge of the distributions
 #           returns the cumulative number of species discovered
-oracle_MAB<- function(data,
-                      init_samples = 30, new_samples = 300, 
-                      seed = 0){
+#             and the matrix of estimated prob of new species
+
+oracle_MAB<- function(data, pmfs,
+                      init_samples = 30, new_samples = 300){
   ## returns the cumulative number of species discovered
   ##inputs: 
-  ##  data = list of J pmfs
+  ##  data = observations
+  ##  pmfs = list of J pmfs
   ##  a,b = hyperparameters of the gamma prior on the concentration params
   ##  init_samples = number of starting observations for the MAB
   ##  new_samples = number of sampling step of the MAB
   ##  burnin = length of butnin of each MCMC
   ##  iter = number of iter after burnin of each MCMC
   ##  seed 
+  
+  
+  if(ncol(data)<(init_samples+new_samples)){
+    cat("not enough data provided for", init_samples, "initial samples and", 
+        new_samples, "sequential sampling steps")
+    cat("\n data should be a matrix with nrow equals to the number of pops")
+  }
   
   # Initializes the progress bar
   pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
@@ -22,39 +31,38 @@ oracle_MAB<- function(data,
   
   
   species_discovered = rep(0, new_samples) #vector to save the num of discoveries
+  prob_new = matrix(NA, nrow = J, ncol = new_samples) #mat to save probs new
   
-  set.seed(seed)
-  J = length(data) #tot number of populations
+  J = nrow(data) #tot number of populations
   
   X = matrix(NA,nrow = J, 
              ncol = init_samples + new_samples) #matrix of observations X[j,i]is X_{j,i}
   
   #sample initial observations
   for(j in 1:J){
-    X[j, 1:init_samples] = sample_from_pop(j, data, size = init_samples) 
+    X[j, 1:init_samples] = data[j, 1:init_samples] 
   }
   
   I = rep(init_samples, J) #initial sample sizes
   
-  #normalise data (which is up to norm costant)
+  #normalize pmfs (which otherwise are up to norm costant)
   for(j in 1:J){
-    data[[j]] = data[[j]] / sum(data[[j]])
+    pmfs[[j]] = pmfs[[j]] / sum(pmfs[[j]])
   }
   for(newobs in 1:new_samples){ #MAB for cycle
-    
-    #normalise data (which is up to norm costant)
-    
+  
     #estimate prediction prob
     est_prob = NULL
     for(j in 1:J){
-      est_prob = c(est_prob, sum(data[[j]][-X[j,!is.na(X[j,])]]))
+      est_prob = c(est_prob, sum(pmfs[[j]][-X[!is.na(X)]]))
     }
+    prob_new[, newobs] = est_prob
     #print(est_prob)
     where_vec = which(est_prob == max(est_prob))
     where = ifelse(length(where_vec)>1, sample(where_vec,1), where_vec)
     
     #sample a new observation
-    x = sample_from_pop(where, data)
+    x = data[where, I[where] + 1] 
     
     #check if species is new
     species_discovered[newobs] = !(x %in% X)
@@ -67,6 +75,6 @@ oracle_MAB<- function(data,
     setTxtProgressBar(pb, newobs)
   }#for MAB
   
-  return(cumsum(species_discovered))
+  return(list(discoveries = cumsum(species_discovered), probs = prob_new))
 }#function
 

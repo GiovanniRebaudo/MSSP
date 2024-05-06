@@ -6,10 +6,17 @@ uniform_MAB <- function(data,
                         seed = 0){
   ## returns the cumulative number of species discovered
   ##inputs: 
-  ##  data = list of J pmfs
+  ##  data = observations
   ##  init_samples = number of starting observations for the MAB
   ##  new_samples = number of sampling step of the MAB
   ##  seed 
+  
+  
+  if(ncol(data)<(init_samples+new_samples)){
+    cat("not enough data provided for", init_samples, "initial samples and", 
+        new_samples, "sequential sampling steps")
+    cat("\n data should be a matrix with nrow equals to the number of pops")
+  }
   
   # Initializes the progress bar
   pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
@@ -18,17 +25,17 @@ uniform_MAB <- function(data,
                        width = 50,   # Progress bar width. Defaults to getOption("width")
                        char = "=")   # Character used to create the bar
   
-  species_discovered = rep(0, new_samples) #vector to save the num of discoveries
-  
   set.seed(seed)
-  J = length(data) #tot number of populations
+  J = nrow(data) #tot number of populations
+  
+  species_discovered = rep(0, new_samples) #vector to save the num of discoveries
   
   X = matrix(NA,nrow = J, 
              ncol = init_samples + new_samples) #matrix of observations X[j,i]is X_{j,i}
   
   #sample initial observations
   for(j in 1:J){
-    X[j, 1:init_samples] = sample_from_pop(j, data, size = init_samples) 
+    X[j, 1:init_samples] = data[j, 1:init_samples] 
   }
   
   I = rep(init_samples, J) #initial sample sizes
@@ -39,7 +46,7 @@ uniform_MAB <- function(data,
     where = sample(J,1)
     
     #sample a new observation
-    x = sample_from_pop(where, data)
+    x = data[where, I[where] + 1] 
     
     #check if species is new
     species_discovered[newobs] = !(x %in% X)
@@ -50,6 +57,6 @@ uniform_MAB <- function(data,
     
     setTxtProgressBar(pb, newobs)
   }#for MAB
-  
-  return(cumsum(species_discovered))
+
+  return(list(discoveries = cumsum(species_discovered)))
 }#function

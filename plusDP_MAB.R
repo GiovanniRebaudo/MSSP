@@ -1,12 +1,13 @@
 ##plusDP_MAB:  Multi arm bandit with the +DP, 
 #             returns the cumulative number of species discovered
+#             and the matrix of estimated prob of new species
 
 plusDP_MAB<- function(data, a = 1, b = 1, p = rep(1/3, 3),
                       init_samples = 30, new_samples = 300, 
                       burnin = 10, iters = 200, seed = 0){
   ## returns the cumulative number of species discovered
   ##inputs: 
-  ##  data = list of J pmfs
+  ##  data = observations
   ##  a,b = hyperparameters of the gamma prior on the concentration params
   ##  p = hyperparameters of the mixture prior of the mixing proportions
   ##  init_samples = number of starting observations for the MAB
@@ -15,6 +16,12 @@ plusDP_MAB<- function(data, a = 1, b = 1, p = rep(1/3, 3),
   ##  iter = number of iter after burnin of each MCMC
   ##  seed 
   
+  if(ncol(data)<(init_samples+new_samples)){
+    cat("not enough data provided for", init_samples, "initial samples and", 
+        new_samples, "sequential sampling steps")
+    cat("\n data should be a matrix with nrow equals to the number of pops")
+  }
+  
   # Initializes the progress bar
   pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
                        max = new_samples, # Maximum value of the progress bar
@@ -22,20 +29,21 @@ plusDP_MAB<- function(data, a = 1, b = 1, p = rep(1/3, 3),
                        width = 50,   # Progress bar width. Defaults to getOption("width")
                        char = "=")   # Character used to create the bar
   
+  set.seed(seed)
+  J = nrow(data) #tot number of populations
   
   species_discovered = rep(0, new_samples) #vector to save the num of discoveries
+  prob_new = matrix(NA, nrow = J, ncol = new_samples) #mat to save probs new
   
   tot_iter = burnin + iters #per each MCMC
-  
-  set.seed(seed)
-  J = length(data) #tot number of populations
+
   
   X = matrix(NA,nrow = J, 
              ncol = init_samples + new_samples) #matrix of observations X[j,i]is X_{j,i}
   
   #sample initial observations
   for(j in 1:J){
-    X[j, 1:init_samples] = sample_from_pop(j, data, size = init_samples) 
+    X[j, 1:init_samples] = data[j, 1:init_samples] 
   }
   
   I = rep(init_samples, J) #initial sample sizes
@@ -148,12 +156,13 @@ plusDP_MAB<- function(data, a = 1, b = 1, p = rep(1/3, 3),
     
     #estimate prediction prob
     est_prob = colMeans(prob_new_species[(burnin+1):tot_iter,])
+    prob_new[, newobs] = est_prob
     where_vec = which(est_prob == max(est_prob))
     where = ifelse(length(where_vec)>1, sample(where_vec,1), where_vec)
     #print(est_prob)
     
     #sample a new observation
-    x = sample_from_pop(where, data)
+    x = data[where, I[where] + 1] 
     
     #check if species is new
     species_discovered[newobs] = !(x %in% X)
@@ -181,5 +190,5 @@ plusDP_MAB<- function(data, a = 1, b = 1, p = rep(1/3, 3),
     setTxtProgressBar(pb, newobs)
   }#for MAB
   
-  return(cumsum(species_discovered))
+  return(list(discoveries = cumsum(species_discovered), probs = prob_new))
 }#function

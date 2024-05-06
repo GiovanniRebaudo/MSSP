@@ -3,7 +3,8 @@
 #                 with overlapping support
 #generate_zipf_reorder :  returns the pmfs of a number J of zipf distributions 
 #                 with overlapping support and "similar" p.m.f.
-#sample_from_pop: returns a sample with replacement from a given pmf
+#sample_from_pop: returns a sample with replacement from one pop given pmfs
+#sample_from_pop_all: returns J samples with replacement from J pop given pmfs
 #sample_alpha_DP: returns a sample of the concentration parameter of a DP
 #                 from its full conditional in a marginal sampler 
 #prob_new_group_DP: ratio between EPPF of DP corresponding to a group 
@@ -78,6 +79,34 @@ sample_from_pop <- function(j, truth, size = 1){
   ## size = how many samples
   
   return(sample(length(truth[[j]]), size, replace = TRUE, prob = truth[[j]])) 
+}
+
+sample_from_pop_all <- function(truth, size = NULL, seed = 0, verbose = TRUE){
+  ## The function returns a sample with replacement 
+  ## of size ``size" from population j 
+  ##inputs: 
+  ## truth = a list of pmfs, truth[[j]][c] = pr(X_{ji} = c)  
+  ## size = vector of how many samples (default is one obs for each pop)
+  ## seed 
+  set.seed(seed)
+  J = length(truth)
+  
+  if(is.null(size)){
+    size = rep(1, J)
+  } else if(J!=length(size)){
+    if(verbose){
+      cat("Size length differs from num. of pops.")
+      cat("\nGenerating samples of size", size[1], "from the", J, "pmfs.\n")
+    }
+    size = rep(size[1],J)
+  }
+  
+  X = matrix(NA, nrow = J, ncol = max(size))
+  for (j in 1:J){
+    X[j,1:size[j]] = sample(length(truth[[j]]), size[j], 
+                            replace = TRUE, prob = truth[[j]])
+  }
+  return(X) 
 }
 
 
