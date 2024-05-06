@@ -851,15 +851,17 @@ initSeqHSSP_fct <- function(
   # I_j = I_j + 1
   I_j_vec[newPop]    = I_j_vec[newPop]+1
   
-  DishAllocation = Data_vec
+  dishAllocation = Data_vec
   
   if (newDataPoint %in% Data_vec[labels_Ij1toI_j]) {
     # If the dish of new obs is already available in the pop we do not add tables
     tablesValues              = tablesValues
     # Assign obs to the first table in the restaurant serving the dish
     
-    currentTable = tableAllocation[labels_Ij1toI_j][
-      which(tableAllocation[labels_Ij1toI_j]==newDataPoint)[1] ]
+    indecesTablesInRestaurant = 
+      (1:maxTableIndex)[tableRestaurantAllocation==newPop]
+    currentTable = which(tablesValues[indecesTablesInRestaurant] == 
+                           newDataPoint)[1]
     tableAllocation           = c(tableAllocation[labels_1toIj],currentTable,
                                   tableAllocation[-labels_1toIj])
     
@@ -898,7 +900,8 @@ initSeqHSSP_fct <- function(
       tablesValues = c(tablesValues, dishAllocation[indexCustomerGlobal])
     }
     # assign the table to the restaurant
-    tableRestaurantAllocation[newTableAllocation] = indexRestaurant
+    tableRestaurantAllocation[newTableAllocation] = newPop
+
     
   } else {
     # If the dish is a new dish overall
@@ -920,7 +923,7 @@ initSeqHSSP_fct <- function(
       tablesValues = c(tablesValues, dishAllocation[indexCustomerGlobal])
     }
     # assign the table to the restaurant
-    tableRestaurantAllocation[newTableAllocation] = indexRestaurant
+    tableRestaurantAllocation[newTableAllocation] = newPop
   }
   
   nDishes = length(unique(dishAllocation))
@@ -943,7 +946,7 @@ initSeqHSSP_fct <- function(
          maxTableIndex             = maxTableIndex,
          nTablesInRestaurant       = nTablesInRestaurant,
          observationDishAllocation = observationDishAllocation,
-         DishAllocation            = DishAllocation,
+         dishAllocation            = dishAllocation,
          nFreeTables               = nFreeTables,
          freeTables                = freeTables)
   )

@@ -299,7 +299,7 @@ out = HPYP_MCMC_fct(
 for (iter_new in 1:new_samples){
   # save 
   prob_new_species = out$prob_new_species
-  DishAllocation   = out$DishAllocation
+  dishAllocation   = out$dishAllocation
   
   #
   nGibbsUpd = nrow(prob_new_species)
@@ -310,7 +310,7 @@ for (iter_new in 1:new_samples){
   newObs = dataNewLs[[newj]][iter_new]
   
   # Check if a new species is discovered
-  species_discovered[iter_new] = !(newObs %in% DishAllocation)
+  species_discovered[iter_new] = !(newObs %in% dishAllocation)
   
   init_all = initSeqHSSP_fct(newPop = newj,
                              newDataPoint = newObs)
@@ -323,10 +323,10 @@ for (iter_new in 1:new_samples){
       # seed to be fixed
       Hyperprior     = T,
       # learn hyperpar via full Bayes if Hyperprior==T
-      niter_MH       = 1,
+      niter_MH       = 3,
       # number of MH iterations for hyperpar update within each steps
       I_j_vec        = init_all$I_j_vec,
-      Data_vec       = init_all$DishAllocation,
+      Data_vec       = init_all$dishAllocation,
       shape_theta    = shape_theta, 
       rate_theta     = rate_theta, 
       a_sigma        = a_sigma, 
