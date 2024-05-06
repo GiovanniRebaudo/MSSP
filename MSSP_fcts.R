@@ -996,7 +996,7 @@ HPY_MAB<- function(data,
   dataNewLs = list()
   for (j in 1:J){
     dataOld = c(dataOld, X[j,1:init_samples])
-    dataNewLs[[j]] = X[(init_samples+1):(new_samples+init_samples)]
+    dataNewLs[[j]] = X[j, (init_samples+1):(new_samples+init_samples)]
   }
   
   for (j in 1:J){
