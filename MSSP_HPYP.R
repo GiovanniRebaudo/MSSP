@@ -260,7 +260,7 @@ init_all = initHSSP_fct(I_j_vec     = I_j_vec,
 
 # Run a short mcmc with fixed hyper par to better initialize the tables
 init_all = HPYP_MCMC_fct(
-  nGibbsUpdates  = 2e3,
+  nGibbsUpdates  = 1e3,
   seed           = 123,
   # seed to be fixed
   Hyperprior     = F,
