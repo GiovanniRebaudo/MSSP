@@ -15,8 +15,6 @@ source("utils.R")
 source("MSSP_fcts.R")
 Save_Plot = FALSE
 
-set.seed(123)
-
 
 ###############which true pmf? 
 J = 8
@@ -146,7 +144,7 @@ for (iter_new in 1:new_samples){
   nGibbsUpd = nrow(prob_new_species)
   burnin    = min(10, nGibbsUpd/2)
   # Choose optimal arm
-  newj = which.max(colMeans(prob_new_species[burnin:nGibbsUpd,]))
+  newj = which.max(colMeans(prob_new_species[(burnin+1):nGibbsUpd,]))
   # Pick new obs
   newObs = X[newj, init_samples+iter_new]
   
