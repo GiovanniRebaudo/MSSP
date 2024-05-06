@@ -57,7 +57,7 @@ dataNewLs = list()
 for (j in 1:J){
   dataj =  sample_from_pop(j, truth, size = init_samples+new_samples)
   data = c(data, dataj[1:init_samples])
-  dataNewLs[[j]] = dataj[(init_samples+1):new_samples]
+  dataNewLs[[j]] = dataj[(init_samples+1):(new_samples+init_samples)]
 }
 
 # Reorder species labels in order of arrival by group
@@ -316,6 +316,14 @@ for (iter_new in 1:new_samples){
   if (species_new){
     # Relabel the dishes if new dish
     newObsLab = max(dishAllocation)+1
+    if (newObsLab %in% dataNewLs){
+      temp = max(unlist(dataNewLs))+1
+      for (j in 1:J){
+        dataNewLs[[j]] = plyr::mapvalues(dataNewLs[[j]], 
+                                         from = newObsLab, 
+                                         to   = temp)
+      }
+    }
     for (j in 1:J){
       dataNewLs[[j]] = plyr::mapvalues(dataNewLs[[j]], 
                                        from = newObs, 
@@ -324,8 +332,6 @@ for (iter_new in 1:new_samples){
     newObs = newObsLab
   }
 
-
-  
   init_all = initSeqHSSP_fct(newPop = newj,
                              newDataPoint = newObs)
   
@@ -350,7 +356,23 @@ for (iter_new in 1:new_samples){
   }
 }
 
+### Plotting
+data_plot <- data.frame(time = 1:new_samples,
+                        model = "HPYP",
+                        value = cumsum(species_discovered))
+
+ggplot(data_plot, aes(x = time, y = value, color = as.factor(model)) )+
+  geom_line(linewidth=1.2) +
+  theme_minimal() +  # Use minimal theme for polished look
+  labs(x = "Additional Samples", y = "Discoveries") +  # Set axis labels
+  scale_color_brewer(palette = "Dark2") +  # Choose color palette
+  theme(
+    legend.position = "right",  # Position legend
+    legend.title = element_blank(),
+    plot.title = element_text(hjust = 0.5)  # Center plot title
+  ) +
+  ggtitle("Simulated data (unordered Zipf) - results")  # Set plot title
 
 
 
-
+  
