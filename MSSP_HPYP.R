@@ -119,7 +119,7 @@ init_all = HPYP_MCMC_fct(
 
 # Run MCMC
 out = HPYP_MCMC_fct(
-  nGibbsUpdates  = 4e3,
+  nGibbsUpdates  = 2e3,
   seed           = 123,
   # seed to be fixed
   Hyperprior     = T,
@@ -172,7 +172,7 @@ for (iter_new in 1:new_samples){
   if(iter_new<new_samples){
     # Run MCMC
     out = HPYP_MCMC_fct(
-      nGibbsUpdates  = 4e2,
+      nGibbsUpdates  = 2e2,
       seed           = 123,
       # seed to be fixed
       Hyperprior     = T,
@@ -206,7 +206,7 @@ data_plot <- data.frame(
 if(!ordered){
   # Plotting
   ggplot(data_plot, aes(x = time, y = value, color = as.factor(model)) )+
-    geom_line(size=1.2) +
+    geom_line(linewidth=1.2) +
     theme_minimal() +  # Use minimal theme for polished look
     labs(x = "Additional Samples", y = "Discoveries") +  # Set axis labels
     scale_color_brewer(palette = "Dark2") +  # Choose color palette

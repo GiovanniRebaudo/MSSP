@@ -139,12 +139,12 @@ initHSSP_fct <- function(I_j_vec,
   # total number of observations
   nRest                     = length(I_j_vec)
   # number of populations
-  nDishes                   = length(unique(Data_vec))
+  nDishes                   = length(uniDish)
   # number of dishes served in the franchise
   dishAllocation            = Data_vec
   
   observationDishAllocation = integer(nDishes)
-  for(lab_dish in 1:nDishes){
+  for(lab_dish in uniDish){
     observationDishAllocation[lab_dish] = sum(Data_vec==lab_dish)
   }
   # how many people are eating a certain dish
@@ -454,6 +454,20 @@ HPYP_MCMC_fct = function(
             sum(tablesValues == dishAllocation[indexCustomerGlobal])
           
           probs = prob_Table_insample_j(model="HPYP")
+          
+          #DEBUG
+          if(sum(probs<0)>0){
+            theta_j = theta_vec[indexRestaurant]
+            sigma_j = sigma_vec[indexRestaurant]
+            print(probs)
+            print(nPeopleAtTable[indecesTablesInRestaurant][indecesPossibleTables] 
+                  - sigma_j)
+            print(nTablesServingCurrentDish)
+            print(nTables)
+            print(nTablesInRestaurant[indexRestaurant])
+            stop()
+          }
+          # END DEBUG
           
           newTableAllocation = sample(possibleTables, 1, replace = F, prob = probs)
         }
@@ -889,19 +903,19 @@ initSeqHSSP_fct <- function(
       freeTables = freeTables[-1]
       nFreeTables = nFreeTables - 1
       nPeopleAtTable[newTableAllocation] = 1
-      tablesValues[newTableAllocation] = dishAllocation[indexCustomerGlobal]
+      tablesValues[newTableAllocation] = newDataPoint
     } else { # create a new table
       maxTableIndex = maxTableIndex + 1
       newTableAllocation = maxTableIndex
       nPeopleAtTable = c(nPeopleAtTable,1)
-      tablesValues = c(tablesValues, dishAllocation[indexCustomerGlobal])
+      tablesValues = c(tablesValues, newDataPoint)
     }
     # assign the table to the restaurant
     tableRestaurantAllocation[newTableAllocation] = newPop
 
     nDishes = length(unique(dishAllocation))
     observationDishAllocation = integer(nDishes)
-    for(lab_dish in 1:nDishes){
+    for(lab_dish in unique(dishAllocation)){
       observationDishAllocation[lab_dish] = sum(Data_vec==lab_dish)
     }
   }
@@ -929,7 +943,7 @@ initSeqHSSP_fct <- function(
 
 ### HPYP MAB
 
-HPY_MAB<- function(data,
+HPY_MAB <- function(data,
                    a_alpha = 1, b_alpha = 1,
                    init_samples = 30, new_samples = 300, 
                    a_sigma = 1, b_sigma = 2,
