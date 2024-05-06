@@ -56,10 +56,8 @@ X = plyr::mapvalues(X,
                 to   = 1:length(uniqDishall))
 
 X_ji_vec = c()
-dataNewLs = list()
 for (j in 1:J){
   X_ji_vec = c(X_ji_vec, X[j,1:init_samples])
-  dataNewLs[[j]] = X[j,(init_samples+1):(new_samples+init_samples)]
 }
 
 # #Check
@@ -139,8 +137,6 @@ out = HPYP_MCMC_fct(
   output         = "prob and last"
 )
 
-
-
 for (iter_new in 1:new_samples){
   # save 
   prob_new_species = out$prob_new_species
@@ -148,7 +144,7 @@ for (iter_new in 1:new_samples){
   
   #
   nGibbsUpd = nrow(prob_new_species)
-  burnin    = min(1000, nGibbsUpd/2)
+  burnin    = min(10, nGibbsUpd/2)
   # Choose optimal arm
   newj = which.max(colMeans(prob_new_species[burnin:nGibbsUpd,]))
   # Pick new obs
