@@ -17,57 +17,50 @@ Save_Plot = FALSE
 
 set.seed(123)
 
-# ##### Multivariate species simulations/truth
-# J           = 3 # Number of populations
-# I_j_vec     = rep(100,J) 
-# cum_I_j_vec = cumsum(I_j_vec)
-# # I_j_vec = (I_1, ...,I_J) vector of sample size in different population
-# n           = sum(I_j_vec) # tot number of observations
-# 
-# # X_ji_vec = integer(n) 
-# # Values of all observations (X_{1,1},...,X_{1,I_1},...,X_{J,1},...,X_{J,I_J})
-# X_ji_vec = c(rep(1,I_j_vec[1]), # X_1i_vec = (X_{1,1},...,X_{1,I_1})
-#              rep(c(rep(2,15),rep(3,20),rep(1,15)),2), # X_2i_vec
-#              rep(1:10,10)) # X_3i_vec
-# 
-# 
-# Xstar_d_vec = unique(X_ji_vec) # observed dishes (dishes=species)
-# D           = length(Xstar_d_vec) # overall number of dishes
-# # Check 
-# if (n != length(X_ji_vec)){print("error: n != length(X_ji_vec)"); stop()}
-# if (sum(Xstar_d_vec != 1:D)){
-#   print("error: labels of dish are not ordered"); stop()}
-# if (J != length(I_j_vec)){print("error: J != length(I_j_vec)"); stop()}
 
+###############which true pmf? 
+J = 8
+ordered = TRUE
 
-# generate true pmf
-truth_par = c(rep(1.3, 2), rep(2, 6))
-truth     = generate_zipf(param = truth_par, 
-                     tot_species = 3000, j_species = 2500, seed = 0)
+if(!ordered){
+  #generate true pmf
+  pmfs = generate_zipf(param = c(rep(1.3, 2), rep(2, 6)), 
+                       tot_species = 3000, j_species = 2500, seed = 0)
+}else{
+  pmfs = generate_zipf_reorder(param = c(rep(1.3, 2), rep(2, 6)), 
+                               tot_species = 3000, j_species = 2500, seed = 0)
+}
+
 # how many new sample? 
 init_samples = 30
 new_samples  = 300
 
-# sample data
-J           = length(truth_par) 
+# Data functionals
+J           = length(pmfs) 
 I_j_vec     = rep(init_samples, J)
 n           = sum(I_j_vec)
-data = c()
+############### Sample observations
+X = sample_from_pop_all(truth = pmfs, size = init_samples + new_samples,
+                        seed = 1, verbose = FALSE)
+
+# Reorder dish in order of arrival by group
+X_ji_mat    = X[,1:init_samples]
+uniqDish    = c()
+for(j in 1:J){
+  uniqDish    = unique(c(uniqDish,unique(as.integer(X_ji_mat[j,]))))
+}
+uniqDishall = unique(c(uniqDish,unique(as.integer(X))))
+
+X = plyr::mapvalues(X, 
+                from = uniqDishall,
+                to   = 1:length(uniqDishall))
+
+X_ji_vec = c()
 dataNewLs = list()
 for (j in 1:J){
-  dataj =  sample_from_pop(j, truth, size = init_samples+new_samples)
-  data = c(data, dataj[1:init_samples])
-  dataNewLs[[j]] = dataj[(init_samples+1):(new_samples+init_samples)]
+  X_ji_vec = c(X_ji_vec, X[j,1:init_samples])
+  dataNewLs[[j]] = X[(init_samples+1):(new_samples+init_samples)]
 }
-
-# Reorder species labels in order of arrival by group
-X_ji_vec = as.integer(factor(data, levels = unique(data)))
-for (j in 1:J){
-  dataNewLs[[j]] = plyr::mapvalues(dataNewLs[[j]], 
-                                   from = unique(data), 
-                                   to   = unique(X_ji_vec))
-}
-
 
 
 ### Preliminaries and data summaries
@@ -316,20 +309,17 @@ for (iter_new in 1:new_samples){
   if (species_new){
     # Relabel the dishes if new dish
     newObsLab = max(dishAllocation)+1
-    if (newObsLab %in% dataNewLs){
-      temp = max(unlist(dataNewLs))+1
-      for (j in 1:J){
-        dataNewLs[[j]] = plyr::mapvalues(dataNewLs[[j]], 
-                                         from = newObsLab, 
-                                         to   = temp)
-      }
+    
+    if(newObs!=newObsLab){
+        temp = max(unlist(dataNewLs))+1
+        for (j in 1:J){
+          dataNewLs[[j]] = plyr::mapvalues(dataNewLs[[j]], 
+                                           from = c(newObsLab, newObs),
+                                           to   = c(temp, newObsLab),
+                                           warn_missing = T)
+          }
+      newObs = newObsLab
     }
-    for (j in 1:J){
-      dataNewLs[[j]] = plyr::mapvalues(dataNewLs[[j]], 
-                                       from = newObs, 
-                                       to   = newObsLab)
-    }
-    newObs = newObsLab
   }
 
   init_all = initSeqHSSP_fct(newPop = newj,
