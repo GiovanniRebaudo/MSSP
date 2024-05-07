@@ -18,7 +18,7 @@ Save_Plot = FALSE
 
 ###############which true pmf? 
 J = 8
-ordered = TRUE
+ordered = F
 
 if(!ordered){
   #generate true pmf
@@ -39,7 +39,7 @@ I_j_vec     = rep(init_samples, J)
 n           = sum(I_j_vec)
 ############### Sample observations
 X = sample_from_pop_all(truth = pmfs, size = init_samples + new_samples,
-                        seed = 2, verbose = FALSE)
+                        seed = 1, verbose = FALSE)
 
 # Reorder dish in order of arrival by group
 X_ji_mat    = X[,1:init_samples]
@@ -92,7 +92,7 @@ species_discovered = logical(new_samples)
 #### Initialization Gibbs
 init_all = initHSSP_fct(I_j_vec     = I_j_vec, 
                         Data_vec    = X_ji_vec,
-                        tablesInit  = "equal", # "separate"
+                        tablesInit  = "separate", #"equal"
                         model       = "HPYP",
                         shape_theta = shape_theta, 
                         rate_theta  = rate_theta, 
@@ -172,14 +172,13 @@ for (iter_new in 1:new_samples){
   if(iter_new<new_samples){
     # Run MCMC
     out = HPYP_MCMC_fct(
-      nGibbsUpdates  = 2e2,
+      nGibbsUpdates  = 4e2,
       seed           = 123,
       # seed to be fixed
       Hyperprior     = T,
       # learn hyperpar via full Bayes if Hyperprior==T
-      niter_MH       = 3,
+      niter_MH       = 5,
       # number of MH iterations for hyperpar update within each steps
-      I_j_vec        = init_all$I_j_vec,
       Data_vec       = init_all$dishAllocation,
       shape_theta    = shape_theta, 
       rate_theta     = rate_theta, 

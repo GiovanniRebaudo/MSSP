@@ -321,7 +321,7 @@ HPYP_MCMC_fct = function(
     # learn hyperpar via full Bayes if  Hyperprior==T
     niter_MH   = 5,
     # number of MH iterations for hyperpar update within each steps
-    I_j_vec,
+    I_j_vec = init_all$I_j_vec,
     Data_vec,
     nGibbsUpdates,
 
@@ -819,6 +819,7 @@ HPYP_MCMC_fct = function(
       nFreeTables               = nFreeTables,
       freeTables                = freeTables,
       dishAllocation            = dishAllocation,
+      I_j_vec                   = I_j_vec,
       prob_new_species          = prob_new_species))
   } else {
     print("no output")
@@ -847,7 +848,8 @@ initSeqHSSP_fct <- function(
     observationDishAllocation = out$observationDishAllocation,
     nFreeTables               = out$nFreeTables,
     freeTables                = out$freeTables,
-    dishAllocation            = out$dishAllocation
+    dishAllocation            = out$dishAllocation,
+    I_j_vec                   = out$I_j_vec
 ) {
 
   indexCustomerGlobal = sum(I_j_vec[1:newPop])+1
@@ -876,7 +878,7 @@ initSeqHSSP_fct <- function(
       (1:maxTableIndex)[tableRestaurantAllocation==newPop]
     currentTable = which(tablesValues[indecesTablesInRestaurant] == 
                            newDataPoint)[1]
-    tableAllocation           = c(tableAllocation[labels_1toIj],currentTable,
+    tableAllocation           = c(tableAllocation[labels_1toIj], currentTable,
                                   tableAllocation[-labels_1toIj])
     
     tableRestaurantAllocation = tableRestaurantAllocation
@@ -912,6 +914,9 @@ initSeqHSSP_fct <- function(
     }
     # assign the table to the restaurant
     tableRestaurantAllocation[newTableAllocation] = newPop
+    # assign person to the table
+    tableAllocation = c(tableAllocation[labels_1toIj], newTableAllocation, 
+                        tableAllocation[-labels_1toIj])
 
     nDishes = length(unique(dishAllocation))
     observationDishAllocation = integer(nDishes)
