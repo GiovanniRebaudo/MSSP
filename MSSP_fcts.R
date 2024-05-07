@@ -1003,7 +1003,7 @@ HPY_MAB <- function(data,
   X_ji_mat    = X[,1:init_samples]
   uniqDish    = c()
   for(j in 1:J){
-    uniqDish    = c(uniqDish,unique(as.integer(X_ji_mat[j,])))
+    uniqDish    = unique(c(uniqDish,unique(as.integer(X_ji_mat[j,]))))
   }
   uniqDishall = unique(c(uniqDish,unique(as.integer(X))))
   
@@ -1011,30 +1011,9 @@ HPY_MAB <- function(data,
                       from = uniqDishall,
                       to   = 1:length(uniqDishall))
   
-  dataOld = c()
-  dataNewLs = list()
+  X_ji_vec = c()
   for (j in 1:J){
-    dataOld = c(dataOld, X[j,1:init_samples])
-    dataNewLs[[j]] = X[j, (init_samples+1):(new_samples+init_samples)]
-  }
-  
-  for (j in 1:J){
-    dataNewLs[[j]] = plyr::mapvalues(dataNewLs[[j]], 
-                                     from = unique(dataOld), 
-                                     to   = unique(X_ji_vec))
-  }
-  
-  # Relabel the dishes if new dish
-  newObsLab = max(dishAllocation)+1
-  
-  if(newObs!=newObsLab){
-    temp = max(unlist(dataNewLs))+1
-    for (j in 1:J){
-      dataNewLs[[j]] = plyr::mapvalues(dataNewLs[[j]], 
-                                       from = c(newObsLab, newObs),
-                                       to   = c(temp, newObsLab),
-                                       warn_missing = F)
-    }
+    X_ji_vec = c(X_ji_vec, X[j,1:init_samples])
   }
   
   # Initializing the hyperparam for the first run of the MAB
