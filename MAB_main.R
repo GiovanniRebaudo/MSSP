@@ -15,10 +15,10 @@ ordered = FALSE
 
 if(!ordered){
   #generate true pmf
-  pmfs = generate_zipf(param = c(rep(1.3, 2), rep(2, 6)), 
+  pmfs = generate_zipf(param = c(rep(1.3, 4), rep(2, 4)), 
                          tot_species = 3000, j_species = 2500, seed = 0)
 }else{
-  pmfs = generate_zipf_reorder(param = c(rep(1.3, 2), rep(2, 6)), 
+  pmfs = generate_zipf_reorder(param = c(rep(1.3, 4), rep(2, 4)), 
                      tot_species = 3000, j_species = 2500, seed = 0)
 }
 
@@ -103,7 +103,7 @@ for(seed in 1:tot_replica){
   results_indepDP[,seed] = results_indepDP_temp$discoveries
   est_prob_new_indepDP[[seed]] = results_indepDP_temp$probs
   
-  #solve MAB decisions via indepPY (not available)
+  #solve MAB decisions via indepPY 
   results_indepPY_temp = indepPY_MAB(data = X, new_samples = new_samples, seed = 0)
   results_indepPY[,seed] = results_indepPY_temp$discoveries
   est_prob_new_indepPY[[seed]] = results_indepPY_temp$probs
@@ -146,10 +146,8 @@ data_plot <- data.frame(
             results_plusDP_mean, results_plusPY_mean,
             results_oracle_mean))
 
-if(!ordered){
-  # Plotting
-  ggplot(data_plot, aes(x = time, y = value, color = as.factor(model)) )+
-    geom_line(size=1.2) +
+ggplot(data_plot, aes(x = time, y = value, color = as.factor(model)) )+
+    geom_line(aes(linetype = as.factor(model)), size=1.2) +
     theme_minimal() +  # Use minimal theme for polished look
     labs(x = "Additional Samples", y = "Discoveries") +  # Set axis labels
     scale_color_brewer(palette = "Dark2") +  # Choose color palette
@@ -159,20 +157,6 @@ if(!ordered){
       plot.title = element_text(hjust = 0.5)  # Center plot title
     ) +
     ggtitle("Simulated data (unordered Zipf) - results")  # Set plot title
-}else{
-  # Plotting
-  ggplot(data_plot, aes(x = time, y = value, color = as.factor(model)) )+
-    geom_line(size=1.2) +
-    theme_minimal() +  # Use minimal theme for polished look
-    labs(x = "Additional Samples", y = "Discoveries") +  # Set axis labels
-    scale_color_brewer(palette = "Dark2") +  # Choose color palette
-    theme(
-      legend.position = "right",  # Position legend
-      legend.title = element_blank(),
-      plot.title = element_text(hjust = 0.5)  # Center plot title
-    ) +
-    ggtitle("Simulated data (ordered Zipf) - results")  # Set plot title
-}
 
 #average number of species discovered 
 sum(diff(results_plusDP_mean)) / new_samples
