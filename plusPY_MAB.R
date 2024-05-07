@@ -281,7 +281,11 @@ plusPY_MAB<- function(data, a_alpha = 1, b_alpha = 1,
         Dish_by_rest = c(Dish_by_rest, nDishes)
         
         if(lj[j]>0){ #rest empty?
-          vec_1_to_D_1 = ifelse(nDishes>1, (1:(nDishes-1)), 1)
+          if(nDishes>1){
+            vec_1_to_D_1 = (1:(nDishes-1))
+          }else{
+            vec_1_to_D_1 = 1
+          }
           ell_d_vec = table(temp)
           
           for (iter_MH in 1:niter_MH){

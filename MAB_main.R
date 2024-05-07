@@ -11,7 +11,7 @@ source("mSSPmab.R")
 
 ###############which true pmf? 
 J = 8
-ordered = TRUE
+ordered = FALSE
 
 if(!ordered){
   #generate true pmf
@@ -61,11 +61,11 @@ new_samples = 300
 tot_replica = 10
 
 ###############initialize for more replicas
-results_plusDP = 0 
-results_plusPY = 0
-results_indepDP = 0
-results_indepPY = 0
-results_random  = 0
+results_plusDP = matrix(NA, nrow = new_samples, ncol = tot_replica) 
+results_plusPY = matrix(NA, nrow = new_samples, ncol = tot_replica)
+results_indepDP = matrix(NA, nrow = new_samples, ncol = tot_replica)
+results_indepPY = matrix(NA, nrow = new_samples, ncol = tot_replica)
+results_random  = matrix(NA, nrow = new_samples, ncol = tot_replica)
 results_oracle  = matrix(NA, nrow = new_samples, ncol = tot_replica)
 est_prob_new_plusDP = vector("list", tot_replica)
 est_prob_new_plusPY = vector("list", tot_replica)
@@ -114,19 +114,19 @@ for(seed in 1:tot_replica){
   #solve MAB decision via uniform
   results_random_temp = uniform_MAB(data = X, new_samples = new_samples, 
                                     seed = 0)
-  results_random = results_random + results_random_temp$discoveries
+  results_random[,seed] = results_random_temp$discoveries
 
   results_oracle_temp = oracle_MAB(data = X, pmfs = pmfs)
   results_oracle[,seed] = results_oracle_temp$discoveries
   est_prob_new_oracle[[seed]] = results_oracle_temp$probs
 }
 
-results_plusDP = rowMeans( results_plusDP )
-results_plusPY = rowMeans( results_plusPY )
-results_indepDP = rowMeans( results_indepDP )
-results_indepPY = rowMeans( results_indepPY )
-results_random  = rowMeans( results_random )
-results_oracle  = rowMeans( results_oracle )
+results_plusDP_mean = rowMeans( results_plusDP )
+results_plusPY_mean = rowMeans( results_plusPY )
+results_indepDP_mean = rowMeans( results_indepDP )
+results_indepPY_mean = rowMeans( results_indepPY )
+results_random_mean  = rowMeans( results_random )
+results_oracle_mean  = rowMeans( results_oracle )
 
 
 ################################################################################
@@ -142,9 +142,9 @@ for(mm in 1:num_model_to_compare){
 data_plot <- data.frame(
   time = rep(1:new_samples, num_model_to_compare),
   model = model,
-  value = c(results_random, results_indepDP, results_indepPY,
-            results_plusDP, results_plusPY,
-            results_oracle))
+  value = c(results_random_mean, results_indepDP_mean, results_indepPY_mean,
+            results_plusDP_mean, results_plusPY_mean,
+            results_oracle_mean))
 
 if(!ordered){
   # Plotting
@@ -175,8 +175,9 @@ if(!ordered){
 }
 
 #average number of species discovered 
-sum(diff(results_plusDP)) / new_samples
-sum(diff(results_plusPY)) / new_samples
-sum(diff(results_indepDP)) / new_samples
-sum(diff(results_random)) / new_samples
-sum(diff(results_oracle)) / new_samples
+sum(diff(results_plusDP_mean)) / new_samples
+sum(diff(results_plusPY_mean)) / new_samples
+sum(diff(results_indepDP_mean)) / new_samples
+sum(diff(results_random_mean)) / new_samples
+sum(diff(results_oracle_mean)) / new_samples
+
