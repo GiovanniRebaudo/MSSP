@@ -88,25 +88,25 @@ for(seed in 1:tot_replica){
   #solve MAB decisions via plusDP
   results_plusDP_temp = plusDP_MAB(data = X, new_samples = new_samples, 
                                    seed = 0)
-  results_plusDP[,seed] = results_plusDP_temp$discoveries
-  est_prob_new_plusDP[[seed]] = results_plusDP_temp$probs
+  results_plusDP[,replica] = results_plusDP_temp$discoveries
+  est_prob_new_plusDP[[replica]] = results_plusDP_temp$probs
   
   #solve MAB decisions via plusPY
   results_plusPY_temp = plusPY_MAB(data = X, new_samples = new_samples, 
                                    seed = 0)
-  results_plusPY[,seed] = results_plusPY_temp$discoveries
-  est_prob_new_plusPY[[seed]] = results_plusPY_temp$probs
+  results_plusPY[,replica] = results_plusPY_temp$discoveries
+  est_prob_new_plusPY[[replica]] = results_plusPY_temp$probs
   
   #solve MAB decisions via indepDP
   results_indepDP_temp = indepDP_MAB(data = X, new_samples = new_samples, 
                                      seed = 0)
-  results_indepDP[,seed] = results_indepDP_temp$discoveries
-  est_prob_new_indepDP[[seed]] = results_indepDP_temp$probs
+  results_indepDP[,replica] = results_indepDP_temp$discoveries
+  est_prob_new_indepDP[[replica]] = results_indepDP_temp$probs
   
   #solve MAB decisions via indepPY 
   results_indepPY_temp = indepPY_MAB(data = X, new_samples = new_samples, seed = 0)
-  results_indepPY[,seed] = results_indepPY_temp$discoveries
-  est_prob_new_indepPY[[seed]] = results_indepPY_temp$probs
+  results_indepPY[,replica] = results_indepPY_temp$discoveries
+  est_prob_new_indepPY[[replica]] = results_indepPY_temp$probs
   
   #solve MAB decisions via plusMD (not available)
   #results_plusMD = plusMD_MAB(data, new_samples = new_samples, seed = 0)
@@ -114,11 +114,11 @@ for(seed in 1:tot_replica){
   #solve MAB decision via uniform
   results_random_temp = uniform_MAB(data = X, new_samples = new_samples, 
                                     seed = 0)
-  results_random[,seed] = results_random_temp$discoveries
+  results_random[,replica] = results_random_temp$discoveries
 
   results_oracle_temp = oracle_MAB(data = X, pmfs = pmfs)
-  results_oracle[,seed] = results_oracle_temp$discoveries
-  est_prob_new_oracle[[seed]] = results_oracle_temp$probs
+  results_oracle[,replica] = results_oracle_temp$discoveries
+  est_prob_new_oracle[[replica]] = results_oracle_temp$probs
 }
 
 results_plusDP_mean = rowMeans( results_plusDP )
