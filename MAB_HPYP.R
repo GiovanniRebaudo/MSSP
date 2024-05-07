@@ -11,7 +11,7 @@ library(ggplot2)
 library(plyr)
 # Load functions
 source("utils.R")
-source("MSSP_fcts.R")
+source("MAB_HPYP_fct.R")
 
 
 ###############which true pmf? 
@@ -36,22 +36,9 @@ new_samples = 300
 tot_replica = 10
 
 ###############initialize for more replicas
-results_HPY = 0
+results_HPY = matrix(NA, nrow=new_samples, ncol= tot_replica)
 est_prob_new_HPY = vector("list", tot_replica)
 
-
-### Debug
-seed=1
-cat("\nReplica", seed, "out of", tot_replica, "\n")
-
-############### Sample observations for fair comparison of methods
-X = sample_from_pop_all(truth = pmfs, size = init_samples + new_samples,
-                        seed = seed, verbose = FALSE)
-data = X; a_alpha = 1; b_alpha = 1
-a_sigma = 1; b_sigma = 2
-burnin = 10; iters = 200; seed = 0
-niter_MH = 10; ada_step = 10
-ada_thresh = 0.44; r_ada_input = 0
 
 ############### Gibbs samplers
 for(seed in 1:tot_replica){
@@ -67,19 +54,16 @@ for(seed in 1:tot_replica){
                              init_samples = init_samples, 
                              new_samples = new_samples, 
                              a_sigma = 1, b_sigma = 2,
-                             burnin = 10, iters = 200, seed = 0, 
+                             burnin = 10, iters = 30, seed = 0, 
                              niter_MH = 10, ada_step = 10,
                              ada_thresh = 0.44, r_ada_input = 0)
   
 
-  
-  results_HPY      =  results_HPY + results_HPY_temp$discoveries
+  results_HPY[,seed] = results_HPY_temp$discoveries
   est_prob_new_HPY[[seed]] = results_HPY_temp$probs
 }
 
-results_HPY = results_HPY  / tot_replica
-
-
+result_avg_HPY = rowMeans(results_HPY)
 
 ################################################################################
 # Plot results 
@@ -94,7 +78,7 @@ for(mm in 1:num_model_to_compare){
 data_plot <- data.frame(
   time = rep(1:new_samples, num_model_to_compare),
   model = model,
-  value = c(results_HPY))
+  value = c(result_avg_HPY))
 
 if(!ordered){
   # Plotting
@@ -125,4 +109,4 @@ if(!ordered){
 }
 
 # Average number of species discovered 
-sum(diff(results_HPY)) / new_samples
+sum(diff(result_avg_HPY)) / new_samples
