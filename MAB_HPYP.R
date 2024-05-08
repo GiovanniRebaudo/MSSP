@@ -50,15 +50,18 @@ for(replica in 1:tot_replica){
   X = sample_from_pop_all(truth = pmfs, size = init_samples + new_samples,
                           seed = replica, verbose = FALSE)
   
-  # #solve MAB decisions via HPY
+  #solve MAB decisions via HPY
   results_HPY_temp = HPY_MAB(data = X,
                              a_alpha = 1, b_alpha = 1,
                              init_samples = init_samples,
                              new_samples = new_samples,
                              a_sigma = 1, b_sigma = 2,
-                             burnin = 100, iters = 300, seed = 0,
+                             burnin = 100, iters = 200, seed = 0,
                              niter_MH = 10, ada_step = 10,
                              ada_thresh = 0.44, r_ada_input = 0)
+  results_HPY[,replica] = results_HPY_temp$discoveries
+  est_prob_new_HPY[[replica]] = results_HPY_temp$probs
+  
   #solve MAB decision via uniform
   results_random_temp = uniform_MAB(data = X, new_samples = new_samples, 
                                     seed = 0)
@@ -67,10 +70,6 @@ for(replica in 1:tot_replica){
   #solve MAB decision via oracle
   results_oracle_temp = oracle_MAB(data = X, pmfs = pmfs)
   results_oracle[,replica] = results_oracle_temp$discoveries
-  
-  #solve MAB decision via HPY
-  results_HPY[,replica] = results_HPY_temp$discoveries
-  est_prob_new_HPY[[replica]] = results_HPY_temp$probs
 }
 
 result_HPY_mean      = rowMeans(results_HPY)
