@@ -37,9 +37,11 @@ tot_replica = 10
 
 ###############initialize for more replicas
 results_HPY      = matrix(NA, nrow = new_samples, ncol = tot_replica)
+results_HDP      = matrix(NA, nrow = new_samples, ncol = tot_replica)
 results_random   = matrix(NA, nrow = new_samples, ncol = tot_replica)
 results_oracle   = matrix(NA, nrow = new_samples, ncol = tot_replica)
 est_prob_new_HPY = vector("list", tot_replica)
+est_prob_new_HDP = vector("list", tot_replica)
 
 
 ############### Gibbs samplers
@@ -50,17 +52,30 @@ for(replica in 1:tot_replica){
   X = sample_from_pop_all(truth = pmfs, size = init_samples + new_samples,
                           seed = replica, verbose = FALSE)
   
-  #solve MAB decisions via HPY
-  results_HPY_temp = HPY_MAB(data = X,
+  if(F){
+    #solve MAB decisions via HPY
+    results_HPY_temp = HPY_MAB(data = X,
+                               a_alpha = 1, b_alpha = 1,
+                               init_samples = init_samples,
+                               new_samples = new_samples,
+                               a_sigma = 1, b_sigma = 2,
+                               burnin = 100, iters = 200, seed = 0,
+                               niter_MH = 10, ada_step = 10,
+                               ada_thresh = 0.44, r_ada_input = 0)
+    results_HPY[,replica] = results_HPY_temp$discoveries
+    est_prob_new_HPY[[replica]] = results_HPY_temp$probs
+  }
+  
+  #solve MAB decisions via HDP
+  results_HDP_temp = HDP_MAB(data = X,
                              a_alpha = 1, b_alpha = 1,
                              init_samples = init_samples,
                              new_samples = new_samples,
-                             a_sigma = 1, b_sigma = 2,
                              burnin = 100, iters = 200, seed = 0,
                              niter_MH = 10, ada_step = 10,
                              ada_thresh = 0.44, r_ada_input = 0)
-  results_HPY[,replica] = results_HPY_temp$discoveries
-  est_prob_new_HPY[[replica]] = results_HPY_temp$probs
+  results_HDP[,replica] = results_HDP_temp$discoveries
+  est_prob_new_HDP[[replica]] = results_HDP_temp$probs
   
   #solve MAB decision via uniform
   results_random_temp = uniform_MAB(data = X, new_samples = new_samples, 
@@ -72,12 +87,19 @@ for(replica in 1:tot_replica){
   results_oracle[,replica] = results_oracle_temp$discoveries
 }
 
-result_HPY_mean      = rowMeans(results_HPY)
+if(F){
+  result_HPY_mean      = rowMeans(results_HPY)
+} else {
+  load("./Data-and-Results/result_HPY_mean.RData")
+}
+
+result_HDP_mean      = rowMeans(results_HDP)
 results_random_mean  = rowMeans(results_random)
 results_oracle_mean  = rowMeans(results_oracle)
 
 if(F){
   save(result_HPY_mean,     file="./Data-and-Results/result_HPY_mean.RData")
+  save(result_HDP_mean,     file="./Data-and-Results/result_HDP_mean.RData")
   save(results_random_mean, file="./Data-and-Results/results_random_mean.RData")
   save(results_oracle_mean, file="./Data-and-Results/results_oracle_mean.RData")
 }
@@ -87,7 +109,7 @@ if(F){
 # Plot results 
 
 # prepare data matrix
-names = c("HPY", "Uniform", "Oracle")
+names = c("HPY", "HDP", "Uniform", "Oracle")
 num_model_to_compare = length(names)
 model = c()
 for(mm in 1:num_model_to_compare){
@@ -96,7 +118,8 @@ for(mm in 1:num_model_to_compare){
 data_plot <- data.frame(
   time = rep(1:new_samples, num_model_to_compare),
   model = model,
-  value = c(result_HPY_mean, results_random_mean, results_oracle_mean))
+  value = c(result_HPY_mean, result_HDP_mean,
+            results_random_mean, results_oracle_mean))
 
 if(!ordered){
   # Plotting
@@ -128,5 +151,6 @@ if(!ordered){
 
 # Average number of species discovered 
 sum(diff(result_HPY_mean))     / new_samples
+sum(diff(result_HDP_mean))     / new_samples
 sum(diff(results_random_mean)) / new_samples
 sum(diff(results_oracle_mean)) / new_samples
