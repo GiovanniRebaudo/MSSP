@@ -124,7 +124,7 @@ data_plot <- data.frame(
 if(!ordered){
   # Plotting
   ggplot(data_plot, aes(x = time, y = value, color = as.factor(model)) )+
-    geom_line(size=1.2) +
+    geom_line(linewidth=1.2) +
     theme_minimal() +  # Use minimal theme for polished look
     labs(x = "Additional Samples", y = "Discoveries") +  # Set axis labels
     scale_color_brewer(palette = "Dark2") +  # Choose color palette
