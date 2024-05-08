@@ -11,21 +11,21 @@ library(salso)
 library(ggplot2) 
 library(plyr)
 # Load functions
-source("utils.R")
+source("mSSPmab.R")
 source("MSSP_fcts.R")
 Save_Plot = FALSE
 
 
 ###############which true pmf? 
 J = 8
-ordered = F
+ordered = FALSE
 
 if(!ordered){
   #generate true pmf
-  pmfs = generate_zipf(param = c(rep(1.3, 2), rep(2, 6)), 
+  pmfs = generate_zipf(param = c(rep(1.3, 4), rep(2, 4)), 
                        tot_species = 3000, j_species = 2500, seed = 0)
 }else{
-  pmfs = generate_zipf_reorder(param = c(rep(1.3, 2), rep(2, 6)), 
+  pmfs = generate_zipf_reorder(param = c(rep(1.3, 4), rep(2, 4)), 
                                tot_species = 3000, j_species = 2500, seed = 0)
 }
 
@@ -39,7 +39,7 @@ I_j_vec     = rep(init_samples, J)
 n           = sum(I_j_vec)
 ############### Sample observations
 X = sample_from_pop_all(truth = pmfs, size = init_samples + new_samples,
-                        seed = 1, verbose = FALSE)
+                        seed = 9, verbose = FALSE)
 
 # Reorder dish in order of arrival by group
 X_ji_mat    = X[,1:init_samples]
@@ -172,7 +172,7 @@ for (iter_new in 1:new_samples){
   if(iter_new<new_samples){
     # Run MCMC
     out = HPYP_MCMC_fct(
-      nGibbsUpdates  = 4e2,
+      nGibbsUpdates  = 400,
       seed           = 123,
       # seed to be fixed
       Hyperprior     = T,

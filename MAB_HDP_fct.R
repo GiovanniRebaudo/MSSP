@@ -1,6 +1,7 @@
-# MAB HPYP Functions
+# MAB HDP Functions
 
-HPY_MAB <- function(data,
+HSSP_MAB <- function(data,
+                     model=c("HPYP", "HDP"),
                     a_alpha = 1, b_alpha = 1,
                     init_samples = 30, new_samples = 300, 
                     a_sigma = 1, b_sigma = 2,
@@ -23,7 +24,8 @@ HPY_MAB <- function(data,
   
   # BEGIN NESTED FUNCTIONS
   
-  HPYP_MCMC_fct = function(
+  HSSP_MCMC_fct = function(
+    model = c("HPYP", "HDP"),
     seed       = 123,
     # seed to be fixed
     Hyperprior = F,
@@ -40,9 +42,7 @@ HPY_MAB <- function(data,
     Max_val = 1e10,
     # Initialized values and quantities named for MCMC: Start here
     theta_vec                 = init_all$theta_vec,
-    sigma_vec                 = init_all$sigma_vec,
     theta0                    = init_all$theta0,
-    sigma0                    = init_all$sigma0,
     tablesValues              = init_all$tablesValues,
     tableAllocation           = init_all$tableAllocation,
     tableRestaurantAllocation = init_all$tableRestaurantAllocation,
@@ -58,9 +58,6 @@ HPY_MAB <- function(data,
     # common shape of theta_0, ..., theta_J gamma prior
     rate_theta, 
     # common rate of theta_0, ..., theta_J gamma prior
-    a_sigma, 
-    # first hyper of sigma_0, ..., sigma_J beta prior
-    b_sigma, 
     # Adaptive Metropolis quantities
     ada_step    = 50,
     ada_thresh  = 0.44,
@@ -72,7 +69,7 @@ HPY_MAB <- function(data,
     
     # Functions to compute probabilities of possible past (for observed dish) tables 
     # Different hyperparameters in different populations
-    prob_Table_insample_j = function(model="HPYP"){
+    prob_Table_insample_j = function(model=c("HPYP", "HDP")){
       if (model=="HPYP"){
         
         theta_j = theta_vec[indexRestaurant]
@@ -83,6 +80,16 @@ HPY_MAB <- function(data,
         
         probs = c(nPeopleAtTable[indecesTablesInRestaurant][indecesPossibleTables] 
                   - sigma_j, probNewTable)
+      
+        } else if(model=="HDP"){
+        theta_j = theta_vec[indexRestaurant]
+        # Function to compute prob assignment of past tables
+        probNewTable = nTablesServingCurrentDish/ (nTables + theta0) *
+          theta_j
+        
+        probs = c(nPeopleAtTable[indecesTablesInRestaurant][indecesPossibleTables],
+                  probNewTable)
+        
       } else if (model=="HGnedin"){
         # TBD
       }
@@ -91,10 +98,13 @@ HPY_MAB <- function(data,
     
     # compute the predictive prob of new species 
     # conditional on tables and hyperparameters values
-    prob_new_species_fct <- function(model="HPYP"){
+    prob_new_species_fct <- function(model=c("HPYP","HDP")){
       if(model=="HPYP"){
         prob_new_species_vec = (theta0+nDishes*sigma0)/(nTables + theta0) *
           (theta_vec + sigma_vec * nTablesInRestaurant)/(theta_vec +I_j_vec)
+      } else if(model=="HDP"){
+        prob_new_species_vec = theta0/(nTables + theta0) *
+          theta_vec/(theta_vec +I_j_vec)
       }
       return(prob_new_species_vec)
     }
@@ -108,10 +118,15 @@ HPY_MAB <- function(data,
     
     if(Hyperprior){
       # Quantities for adaptive Metropolis quantities
-      Prop_sd_logit_sig_j = rep(1, nRest+1)
-      Move_sigma_j_out    = matrix(nrow=nRest+1, ncol=nGibbsUpdates)
-      Prop_sd_log_theta_j = rep(1, nRest+1)
-      Move_theta_j_out    = matrix(nrow=nRest+1, ncol=nGibbsUpdates)
+      if (model=="HPYP"){
+        Prop_sd_logit_sig_j = rep(1, nRest+1)
+        Move_sigma_j_out    = matrix(nrow=nRest+1, ncol=nGibbsUpdates)
+        Prop_sd_log_theta_j = rep(1, nRest+1)
+        Move_theta_j_out    = matrix(nrow=nRest+1, ncol=nGibbsUpdates)
+      } else if(model=="HDP"){
+        Prop_sd_log_theta_j = rep(1, nRest+1)
+        Move_theta_j_out    = matrix(nrow=nRest+1, ncol=nGibbsUpdates)
+      }
       # We can save less if needed e.g., matrix(nrow=J+1, ncol=ada_step)
     }
     
@@ -119,12 +134,19 @@ HPY_MAB <- function(data,
     prob_new_species = matrix(0,nrow = nGibbsUpdates, ncol = nRest)
     
     if(output=="all"){
-      tableAllocationAcrossGibbs = matrix(0, nrow = nGibbsUpdates, ncol = nObs)
-      theta_vecAcrossGibbs = matrix(0, nrow = nGibbsUpdates, ncol = nRest)
-      sigma_vecAcrossGibbs = matrix(0, nrow = nGibbsUpdates, ncol = nRest)
-      nTablesInRestaurantAcrossGibbs = matrix(0, nrow=nGibbsUpdates, ncol=nRest)
-      theta0AcrossGibbs = double(nGibbsUpdates)
-      sigma0AcrossGibbs = double(nGibbsUpdates)
+      if (model=="HPYP"){
+        tableAllocationAcrossGibbs = matrix(0, nrow = nGibbsUpdates, ncol = nObs)
+        theta_vecAcrossGibbs = matrix(0, nrow = nGibbsUpdates, ncol = nRest)
+        sigma_vecAcrossGibbs = matrix(0, nrow = nGibbsUpdates, ncol = nRest)
+        nTablesInRestaurantAcrossGibbs = matrix(0, nrow=nGibbsUpdates, ncol=nRest)
+        theta0AcrossGibbs = double(nGibbsUpdates)
+        sigma0AcrossGibbs = double(nGibbsUpdates)
+      } else if(model=="HDP"){
+        tableAllocationAcrossGibbs = matrix(0, nrow = nGibbsUpdates, ncol = nObs)
+        theta_vecAcrossGibbs = matrix(0, nrow = nGibbsUpdates, ncol = nRest)
+        nTablesInRestaurantAcrossGibbs = matrix(0, nrow=nGibbsUpdates, ncol=nRest)
+        theta0AcrossGibbs = double(nGibbsUpdates)
+      }
     }
     
     for (iter in 1:nGibbsUpdates) {
@@ -162,7 +184,7 @@ HPY_MAB <- function(data,
             nTablesServingCurrentDish = 
               sum(tablesValues == dishAllocation[indexCustomerGlobal])
             
-            probs = prob_Table_insample_j(model="HPYP")
+            probs = prob_Table_insample_j(model=model)
             
             newTableAllocation = sample(possibleTables, 1, replace = F, prob = probs)
           }
@@ -219,7 +241,9 @@ HPY_MAB <- function(data,
         for (iter_MH in 1:niter_MH){
           
           # Update parameters \theta_0
-          sigma_old      = sigma0
+          if(model=="HPYP"){
+            sigma_old      = sigma0
+          }
           theta_old      = theta0
           log_theta_old  = log(theta_old)
           # Propose \theta_0
@@ -234,20 +258,33 @@ HPY_MAB <- function(data,
             Acc_prob_theta = shape_theta*(log_theta_prop - log_theta_old)+
               rate_theta*(theta_old-theta_prop)
             
-            # Likelihood part
-            if(nDishes>1){
-              Acc_prob_theta = Acc_prob_theta +
-                sum(log(theta_prop + vec_1_to_D_1 * sigma_old) - 
-                      log(theta_old  + vec_1_to_D_1 * sigma_old)) +
-                lgamma(theta_old + nTables) - lgamma(theta_prop + nTables) +
-                lgamma(theta_prop +1)       - lgamma(theta_old +1)
-            } else {
-              Acc_prob_theta = Acc_prob_theta +
-                lgamma(theta_old + nTables) - lgamma(theta_prop + nTables) +
-                lgamma(theta_prop +1)       - lgamma(theta_old +1)
+            if(model=="HPYP"){
+              # Likelihood part
+              if(nDishes>1){
+                Acc_prob_theta = Acc_prob_theta +
+                  sum(log(theta_prop + vec_1_to_D_1 * sigma_old) - 
+                        log(theta_old  + vec_1_to_D_1 * sigma_old)) +
+                  lgamma(theta_old + nTables) - lgamma(theta_prop + nTables) +
+                  lgamma(theta_prop +1)       - lgamma(theta_old +1)
+              } else {
+                Acc_prob_theta = Acc_prob_theta +
+                  lgamma(theta_old + nTables) - lgamma(theta_prop + nTables) +
+                  lgamma(theta_prop +1)       - lgamma(theta_old +1)
+              }
+            } else if (model=="HDP") {
+              # Likelihood part
+              if(nDishes>1){
+                Acc_prob_theta = Acc_prob_theta +
+                  sum(log(theta_prop + vec_1_to_D_1 * 0) - 
+                        log(theta_old  + vec_1_to_D_1 * 0)) +
+                  lgamma(theta_old + nTables) - lgamma(theta_prop + nTables) +
+                  lgamma(theta_prop +1)       - lgamma(theta_old +1)
+              } else {
+                Acc_prob_theta = Acc_prob_theta +
+                  lgamma(theta_old + nTables) - lgamma(theta_prop + nTables) +
+                  lgamma(theta_prop +1)       - lgamma(theta_old +1)
+              }
             }
-            
-            
             
             move_theta         = (log(runif(1)) < Acc_prob_theta)
             theta_old          = ifelse(move_theta, theta_prop, theta_old)
@@ -257,6 +294,7 @@ HPY_MAB <- function(data,
           
           theta0            = theta_old
           
+          if(model=="HPYP"){
           # Update parameters \sigma_0
           log_sigma_old   = log(sigma_old)
           logit_sigma_old = qlogis(sigma_old) # logit function
@@ -307,17 +345,22 @@ HPY_MAB <- function(data,
           } else {
             move_sigma = FALSE
           }
+          }
           
           # Save acceptance
           if (iter_MH == niter_MH){
             Move_theta_j_out[nRest+1, iter] = move_theta
-            Move_sigma_j_out[nRest+1, iter] = move_sigma
+            if(model=="HPYP"){
+              Move_sigma_j_out[nRest+1, iter] = move_sigma
+            }
           }
           
           
           for (indexRestaurant in 1:nRest) {
             # Update parameters \theta_j, j = 1, ..., J
-            sigma_old      = sigma_vec[indexRestaurant]
+            if(model=="HPYP"){
+              sigma_old      = sigma_vec[indexRestaurant]
+            }
             theta_old      = theta_vec[indexRestaurant]
             log_theta_old  = log(theta_old)
             # Propose from adaptive Gaussian on transformed space
@@ -339,11 +382,20 @@ HPY_MAB <- function(data,
                 vec_1_to_ell_j_1 = 1:(ell_j-1)
                 
                 # Likelihood part (PYP log EPPF)
-                Acc_prob_theta = Acc_prob_theta +
-                  sum(log(theta_prop  + vec_1_to_ell_j_1 *sigma_old) - 
-                        log(theta_old + vec_1_to_ell_j_1 *sigma_old)) +
-                  lgamma(theta_old + I_j) - lgamma(theta_prop + I_j) +
-                  lgamma(theta_prop +1)   - lgamma(theta_old +1)
+                if(model=="HPYP"){
+                  Acc_prob_theta = Acc_prob_theta +
+                    sum(log(theta_prop  + vec_1_to_ell_j_1 *sigma_old) - 
+                          log(theta_old + vec_1_to_ell_j_1 *sigma_old)) +
+                    lgamma(theta_old + I_j) - lgamma(theta_prop + I_j) +
+                    lgamma(theta_prop +1)   - lgamma(theta_old +1)
+                } else if (model=="HDP"){
+                  Acc_prob_theta = Acc_prob_theta +
+                    sum(log(theta_prop  + vec_1_to_ell_j_1 *0) - 
+                          log(theta_old + vec_1_to_ell_j_1 *0)) +
+                    lgamma(theta_old + I_j) - lgamma(theta_prop + I_j) +
+                    lgamma(theta_prop +1)   - lgamma(theta_old +1)
+                }
+
                 # End: Likelihood part (PYP log EPPF)
               } else {
                 Acc_prob_theta = Acc_prob_theta +
@@ -362,7 +414,7 @@ HPY_MAB <- function(data,
             }
             
             
-            
+            if(model=="HPYP"){
             # Update parameters \sigma_j, j = 1, ..., J
             log_sigma_old   = log(sigma_old)
             logit_sigma_old = qlogis(sigma_old) # logit function
@@ -415,12 +467,14 @@ HPY_MAB <- function(data,
             } else {
               move_sigma = FALSE
             }
-            
+            }
             
             # Save acceptance if is the last iteration of MH
             if (iter_MH == niter_MH){
               Move_theta_j_out[indexRestaurant, iter] = move_theta
-              Move_sigma_j_out[indexRestaurant, iter] = move_sigma
+              if(model=="HPYP"){
+                Move_sigma_j_out[indexRestaurant, iter] = move_sigma
+              }
             }
             
           }
@@ -434,13 +488,15 @@ HPY_MAB <- function(data,
           seq_ada_step             = (r_ada-ada_step):r_ada
           
           # (Ada)
-          # Update proposal for \sigma_j, j = 0, 1, ..., J
-          Accept_sigma_j      = apply(Move_sigma_j_out[,seq_ada_step], 1, mean)
-          Dec_which_sigma_j   = Accept_sigma_j < ada_thresh
-          Prop_sd_logit_sig_j = ifelse(Dec_which_sigma_j, 
-                                       exp(log(Prop_sd_logit_sig_j) - ada_delta), 
-                                       exp(log(Prop_sd_logit_sig_j) + ada_delta))
-          
+          if(model=="HPYP"){
+            # Update proposal for \sigma_j, j = 0, 1, ..., J
+            Accept_sigma_j      = apply(Move_sigma_j_out[,seq_ada_step], 1, mean)
+            Dec_which_sigma_j   = Accept_sigma_j < ada_thresh
+            Prop_sd_logit_sig_j = ifelse(Dec_which_sigma_j, 
+                                         exp(log(Prop_sd_logit_sig_j) - ada_delta), 
+                                         exp(log(Prop_sd_logit_sig_j) + ada_delta))
+          }
+
           # Update proposal for \theta_j, j = 0, 1, ..., J
           Accept_theta_j      = apply(Move_theta_j_out[,seq_ada_step], 1, mean)
           Dec_which_theta_j   = Accept_theta_j < ada_thresh
@@ -452,44 +508,66 @@ HPY_MAB <- function(data,
       }
       
       # compute and save the vector of probabilities of new species
-      prob_new_species[iter,] = prob_new_species_fct("HPYP")
+      prob_new_species[iter,] = prob_new_species_fct(model)
       
       if(output=="all"){
         tableAllocationAcrossGibbs[iter,] = tableAllocation
         theta_vecAcrossGibbs[iter,] = theta_vec
-        sigma_vecAcrossGibbs[iter,] = sigma_vec
         nTablesInRestaurantAcrossGibbs[iter,] = nTablesInRestaurant
         theta0AcrossGibbs[iter] = theta0
-        sigma0AcrossGibbs[iter] = sigma0
+        if(model=="HPYP"){
+          sigma_vecAcrossGibbs[iter,] = sigma_vec
+          sigma0AcrossGibbs[iter] = sigma0
+        }
       }
     }
     
     ## Output
     if(output=="all" && Hyperprior){
       
-      return(list(
-        tableAllocationAcrossGibbs     = tableAllocationAcrossGibbs,
-        theta_vecAcrossGibbs           = theta_vecAcrossGibbs,
-        sigma_vecAcrossGibbs           = sigma_vecAcrossGibbs,
-        nTablesInRestaurantAcrossGibbs = nTablesInRestaurantAcrossGibbs,
-        theta0AcrossGibbs              = theta0AcrossGibbs,
-        sigma0AcrossGibbs              = sigma0AcrossGibbs,
-        prob_new_species               = prob_new_species,
-        Prop_sd_logit_sig_j            = Prop_sd_logit_sig_j,
-        Move_sigma_j_out               = Move_sigma_j_out,
-        Prop_sd_log_theta_j            = Prop_sd_log_theta_j,
-        Move_theta_j_out               = Move_theta_j_out))
+      if(model=="HDP"){
+        return(list(
+          tableAllocationAcrossGibbs     = tableAllocationAcrossGibbs,
+          theta_vecAcrossGibbs           = theta_vecAcrossGibbs,
+          nTablesInRestaurantAcrossGibbs = nTablesInRestaurantAcrossGibbs,
+          theta0AcrossGibbs              = theta0AcrossGibbs,
+          prob_new_species               = prob_new_species,
+          Prop_sd_logit_sig_j            = Prop_sd_logit_sig_j,
+          Move_theta_j_out               = Move_theta_j_out))
+      } else if(model=="HPYP"){
+        return(list(
+          tableAllocationAcrossGibbs     = tableAllocationAcrossGibbs,
+          theta_vecAcrossGibbs           = theta_vecAcrossGibbs,
+          nTablesInRestaurantAcrossGibbs = nTablesInRestaurantAcrossGibbs,
+          theta0AcrossGibbs              = theta0AcrossGibbs,
+          prob_new_species               = prob_new_species,
+          Prop_sd_logit_sig_j            = Prop_sd_logit_sig_j,
+          Move_theta_j_out               = Move_theta_j_out,
+          sigma_vecAcrossGibbs           = sigma_vecAcrossGibbs,
+          sigma0AcrossGibbs              = sigma0AcrossGibbs,
+          Move_sigma_j_out               = Move_sigma_j_out,
+          Prop_sd_log_theta_j            = Prop_sd_log_theta_j))
+      }
       
     } else if (output=="all" && !Hyperprior){
       
-      return(list(
-        tableAllocationAcrossGibbs     = tableAllocationAcrossGibbs,
-        theta_vecAcrossGibbs           = theta_vecAcrossGibbs,
-        sigma_vecAcrossGibbs           = sigma_vecAcrossGibbs,
-        nTablesInRestaurantAcrossGibbs = nTablesInRestaurantAcrossGibbs,
-        theta0AcrossGibbs              = theta0AcrossGibbs,
-        sigma0AcrossGibbs              = sigma0AcrossGibbs,
-        prob_new_species               = prob_new_species))
+      if(model=="HPYP"){
+        return(list(
+          tableAllocationAcrossGibbs     = tableAllocationAcrossGibbs,
+          theta_vecAcrossGibbs           = theta_vecAcrossGibbs,
+          sigma_vecAcrossGibbs           = sigma_vecAcrossGibbs,
+          nTablesInRestaurantAcrossGibbs = nTablesInRestaurantAcrossGibbs,
+          theta0AcrossGibbs              = theta0AcrossGibbs,
+          sigma0AcrossGibbs              = sigma0AcrossGibbs,
+          prob_new_species               = prob_new_species))
+      } else if(model=="HDP"){
+        return(list(
+          tableAllocationAcrossGibbs     = tableAllocationAcrossGibbs,
+          theta_vecAcrossGibbs           = theta_vecAcrossGibbs,
+          nTablesInRestaurantAcrossGibbs = nTablesInRestaurantAcrossGibbs,
+          theta0AcrossGibbs              = theta0AcrossGibbs,
+          prob_new_species               = prob_new_species))
+      }
     }
     
     else if (output=="prob_new"){
@@ -498,6 +576,7 @@ HPY_MAB <- function(data,
       
     } else if (output=="prob and last"){
       
+      if(model=="HPYP"){  
       return(list(
         theta_vec                 = theta_vec,
         sigma_vec                 = sigma_vec,
@@ -516,6 +595,24 @@ HPY_MAB <- function(data,
         dishAllocation            = dishAllocation,
         I_j_vec                   = I_j_vec,
         prob_new_species          = prob_new_species))
+      } else if(model=="HDP"){
+        return(list(
+          theta_vec                 = theta_vec,
+          theta0                    = theta0,
+          tablesValues              = tablesValues,
+          tableAllocation           = tableAllocation,
+          tableRestaurantAllocation = tableRestaurantAllocation,
+          nPeopleAtTable            = nPeopleAtTable,
+          nTables                   = nTables,
+          maxTableIndex             = maxTableIndex,
+          nTablesInRestaurant       = nTablesInRestaurant,
+          observationDishAllocation = observationDishAllocation,
+          nFreeTables               = nFreeTables,
+          freeTables                = freeTables,
+          dishAllocation            = dishAllocation,
+          I_j_vec                   = I_j_vec,
+          prob_new_species          = prob_new_species))
+      }
     } else {
       print("no output")
     }
@@ -523,12 +620,11 @@ HPY_MAB <- function(data,
   # Initialize (after a new observation is observed) the values of the MCMC
   # iterations given the last iteration of the previous MCMC
   initSeqHSSP_fct <- function(
+    model = c("HPYP", "HDP"),
     newPop                    = NA,
     newDataPoint              = NA,
     theta_vec                 = out$theta_vec,
-    sigma_vec                 = out$sigma_vec,
     theta0                    = out$theta0,
-    sigma0                    = out$sigma0,
     tablesValues              = out$tablesValues,
     tableAllocation           = out$tableAllocation,
     tableRestaurantAllocation = out$tableRestaurantAllocation,
@@ -542,6 +638,12 @@ HPY_MAB <- function(data,
     dishAllocation            = out$dishAllocation,
     I_j_vec                   = out$I_j_vec
   ) {
+    
+    # Hyper
+    if(model=="HPYP"){
+      sigma0                    = out$sigma0
+      sigma_vec                 = out$sigma_vec
+    }
     
     indexCustomerGlobal = sum(I_j_vec[1:newPop])+1
     
@@ -616,24 +718,44 @@ HPY_MAB <- function(data,
       }
     }
     
-    return(
-      list(I_j_vec                   = I_j_vec,
-           theta_vec                 = theta_vec,
-           sigma_vec                 = sigma_vec,
-           theta0                    = theta0,
-           sigma0                    = sigma0,
-           tablesValues              = tablesValues,
-           tableAllocation           = tableAllocation,
-           tableRestaurantAllocation = tableRestaurantAllocation,
-           nPeopleAtTable            = nPeopleAtTable,
-           nTables                   = nTables,
-           maxTableIndex             = maxTableIndex,
-           nTablesInRestaurant       = nTablesInRestaurant,
-           observationDishAllocation = observationDishAllocation,
-           dishAllocation            = dishAllocation,
-           nFreeTables               = nFreeTables,
-           freeTables                = freeTables)
-    )
+    if(model=="HPYP"){
+      return(
+        list(I_j_vec                   = I_j_vec,
+             theta_vec                 = theta_vec,
+             sigma_vec                 = sigma_vec,
+             theta0                    = theta0,
+             sigma0                    = sigma0,
+             tablesValues              = tablesValues,
+             tableAllocation           = tableAllocation,
+             tableRestaurantAllocation = tableRestaurantAllocation,
+             nPeopleAtTable            = nPeopleAtTable,
+             nTables                   = nTables,
+             maxTableIndex             = maxTableIndex,
+             nTablesInRestaurant       = nTablesInRestaurant,
+             observationDishAllocation = observationDishAllocation,
+             dishAllocation            = dishAllocation,
+             nFreeTables               = nFreeTables,
+             freeTables                = freeTables)
+      )
+    } else if(model=="HDP"){
+      return(
+        list(I_j_vec                   = I_j_vec,
+             theta_vec                 = theta_vec,
+             theta0                    = theta0,
+             tablesValues              = tablesValues,
+             tableAllocation           = tableAllocation,
+             tableRestaurantAllocation = tableRestaurantAllocation,
+             nPeopleAtTable            = nPeopleAtTable,
+             nTables                   = nTables,
+             maxTableIndex             = maxTableIndex,
+             nTablesInRestaurant       = nTablesInRestaurant,
+             observationDishAllocation = observationDishAllocation,
+             dishAllocation            = dishAllocation,
+             nFreeTables               = nFreeTables,
+             freeTables                = freeTables)
+      )
+    }
+    
   }
   
   
@@ -643,7 +765,7 @@ HPY_MAB <- function(data,
                            Data_vec, 
                            # vector of data ordered by groups i.e.,
                            # X_{1,1}, ..., X_{I_1, 1}, ...., X_{1,J}, ..., X_{I_J, J}
-                           model ="HPYP", 
+                           model = c("HPYP", "HDP"),
                            # model
                            shape_theta, 
                            # common shape of theta_0, ..., theta_J gamma prior
@@ -693,6 +815,10 @@ HPY_MAB <- function(data,
       # rSamples =rbeta(1000, shape1=a_sigma, shape2=b_sigma)
       # mean(rSamples);  a_sigma/(a_sigma+b_sigma)
       # var(rSamples)
+    } else if (model =="HDP"){
+      theta_vec = rep(shape_theta/rate_theta, nRest)
+
+      theta0  = shape_theta/rate_theta
     }
     
     if (tablesInit == "separate"){
@@ -789,45 +915,84 @@ HPY_MAB <- function(data,
       
     }
     
-    return(list(# initialization values of
-      theta_vec                 = theta_vec,
-      # theta_1, ..., theta_J
-      sigma_vec                 = sigma_vec,
-      # sigma_1, ..., sigma_J
-      theta0                    = theta0,
-      # theta_0
-      sigma0                    = sigma0,
-      # sigma_0
-      # nObs                      = nObs,
-      # total number of observations
-      # nRest                     = nRest,
-      # number of populations
-      # nDishes                   = nDishes,             
-      # number of dishes served in the franchise
-      # dishAllocation            = dishAllocation,
-      # observed individual vector of species in order of arrival
-      tableAllocation           = tableAllocation,
-      # allocation of customers to tables --> 
-      # table indexes are global (across the franchise)
-      tablesValues              = tablesValues,
-      # dish served at each table in the franchise
-      tableRestaurantAllocation = tableRestaurantAllocation,
-      # allocation of the table to the restaurant
-      nPeopleAtTable            = nPeopleAtTable,
-      # people sitting at each table
-      nTables                   = nTables,
-      # number of occupied tables in the franchise
-      maxTableIndex             = maxTableIndex,
-      # max table index (nTables + nFreeTables = maxTableIndex)
-      nTablesInRestaurant       = nTablesInRestaurant,
-      # contains only the number of occupied tables in each restaurant
-      observationDishAllocation = observationDishAllocation,
-      # how many people are eating a certain dish
-      nFreeTables = nFreeTables,
-      # number of free tables
-      freeTables = freeTables 
-      # indices of free tables CONSIDER USING A STACK
-    )    )
+    if(model=="HPYP"){
+      return(list(# initialization values of
+        theta_vec                 = theta_vec,
+        # theta_1, ..., theta_J
+        sigma_vec                 = sigma_vec,
+        # sigma_1, ..., sigma_J
+        theta0                    = theta0,
+        # theta_0
+        sigma0                    = sigma0,
+        # sigma_0
+        # nObs                      = nObs,
+        # total number of observations
+        # nRest                     = nRest,
+        # number of populations
+        # nDishes                   = nDishes,             
+        # number of dishes served in the franchise
+        # dishAllocation            = dishAllocation,
+        # observed individual vector of species in order of arrival
+        tableAllocation           = tableAllocation,
+        # allocation of customers to tables --> 
+        # table indexes are global (across the franchise)
+        tablesValues              = tablesValues,
+        # dish served at each table in the franchise
+        tableRestaurantAllocation = tableRestaurantAllocation,
+        # allocation of the table to the restaurant
+        nPeopleAtTable            = nPeopleAtTable,
+        # people sitting at each table
+        nTables                   = nTables,
+        # number of occupied tables in the franchise
+        maxTableIndex             = maxTableIndex,
+        # max table index (nTables + nFreeTables = maxTableIndex)
+        nTablesInRestaurant       = nTablesInRestaurant,
+        # contains only the number of occupied tables in each restaurant
+        observationDishAllocation = observationDishAllocation,
+        # how many people are eating a certain dish
+        nFreeTables = nFreeTables,
+        # number of free tables
+        freeTables = freeTables 
+        # indices of free tables CONSIDER USING A STACK
+      )    )
+    } else if(model=="HDP"){
+      return(list(# initialization values of
+        theta_vec                 = theta_vec,
+        # theta_1, ..., theta_J
+        theta0                    = theta0,
+        # theta_0
+        # nObs                      = nObs,
+        # total number of observations
+        # nRest                     = nRest,
+        # number of populations
+        # nDishes                   = nDishes,             
+        # number of dishes served in the franchise
+        # dishAllocation            = dishAllocation,
+        # observed individual vector of species in order of arrival
+        tableAllocation           = tableAllocation,
+        # allocation of customers to tables --> 
+        # table indexes are global (across the franchise)
+        tablesValues              = tablesValues,
+        # dish served at each table in the franchise
+        tableRestaurantAllocation = tableRestaurantAllocation,
+        # allocation of the table to the restaurant
+        nPeopleAtTable            = nPeopleAtTable,
+        # people sitting at each table
+        nTables                   = nTables,
+        # number of occupied tables in the franchise
+        maxTableIndex             = maxTableIndex,
+        # max table index (nTables + nFreeTables = maxTableIndex)
+        nTablesInRestaurant       = nTablesInRestaurant,
+        # contains only the number of occupied tables in each restaurant
+        observationDishAllocation = observationDishAllocation,
+        # how many people are eating a certain dish
+        nFreeTables = nFreeTables,
+        # number of free tables
+        freeTables = freeTables 
+        # indices of free tables CONSIDER USING A STACK
+      )    )
+    }
+    
   }
   
   ## END NESTED FUNCTIONS
@@ -886,7 +1051,7 @@ HPY_MAB <- function(data,
   init_all = initHSSP_fct(I_j_vec     = I_j_vec, 
                           Data_vec    = X_ji_vec,
                           tablesInit  = "separate", #"equal"
-                          model       = "HPYP",
+                          model       = "HDP",
                           shape_theta = a_alpha, 
                           rate_theta  = b_alpha, 
                           a_sigma     = a_sigma, 

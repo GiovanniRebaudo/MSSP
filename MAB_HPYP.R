@@ -10,21 +10,21 @@ library(salso)
 library(ggplot2) 
 library(plyr)
 # Load functions
-source("utils.R")
+source("mSSPmab.R")
 source("MAB_HPYP_fct.R")
 
 
 ###############which true pmf? 
 J = 8
-ordered = TRUE
+ordered = FALSE
 
 if(!ordered){
   #generate true pmf
-  pmfs = generate_zipf(param = c(rep(1.3, 2), rep(2, 6)), 
-                         tot_species = 3000, j_species = 2500, seed = 0)
+  pmfs = generate_zipf(param = c(rep(1.3, 4), rep(2, 4)), 
+                       tot_species = 3000, j_species = 2500, seed = 0)
 }else{
-  pmfs = generate_zipf_reorder(param = c(rep(1.3, 2), rep(2, 6)), 
-                     tot_species = 3000, j_species = 2500, seed = 0)
+  pmfs = generate_zipf_reorder(param = c(rep(1.3, 4), rep(2, 4)), 
+                               tot_species = 3000, j_species = 2500, seed = 0)
 }
 
 
@@ -36,17 +36,19 @@ new_samples = 300
 tot_replica = 10
 
 ###############initialize for more replicas
-results_HPY = matrix(NA, nrow=new_samples, ncol= tot_replica)
+results_HPY      = matrix(NA, nrow = new_samples, ncol = tot_replica)
+results_random   = matrix(NA, nrow = new_samples, ncol = tot_replica)
+results_oracle   = matrix(NA, nrow = new_samples, ncol = tot_replica)
 est_prob_new_HPY = vector("list", tot_replica)
 
 
 ############### Gibbs samplers
-for(seed in 1:tot_replica){
-  cat("\nReplica", seed, "out of", tot_replica, "\n")
+for(replica in 1:tot_replica){
+  cat("\nReplica", replica, "out of", tot_replica, "\n")
   
   ############### Sample observations for fair comparison of methods
   X = sample_from_pop_all(truth = pmfs, size = init_samples + new_samples,
-                          seed = seed, verbose = FALSE)
+                          seed = replica, verbose = FALSE)
   
   #solve MAB decisions via HPY
   results_HPY_temp = HPY_MAB(data = X,
@@ -54,23 +56,40 @@ for(seed in 1:tot_replica){
                              init_samples = init_samples, 
                              new_samples = new_samples, 
                              a_sigma = 1, b_sigma = 2,
-                             burnin = 10, iters = 30, seed = 0, 
+                             burnin = 100, iters = 300, seed = 0, 
                              niter_MH = 10, ada_step = 10,
                              ada_thresh = 0.44, r_ada_input = 0)
+  #solve MAB decision via uniform
+  results_random_temp = uniform_MAB(data = X, new_samples = new_samples, 
+                                    seed = 0)
+  results_random[,replica] = results_random_temp$discoveries
+  
+  #solve MAB decision via oracle
+  results_oracle_temp = oracle_MAB(data = X, pmfs = pmfs)
+  results_oracle[,replica] = results_oracle_temp$discoveries
   
 
-  results_HPY[,seed] = results_HPY_temp$discoveries
-  est_prob_new_HPY[[seed]] = results_HPY_temp$probs
+  results_HPY[,replica] = results_HPY_temp$discoveries
+  est_prob_new_HPY[[replica]] = results_HPY_temp$probs
 }
 
-result_avg_HPY = rowMeans(results_HPY)
+result_HPY_mean      = rowMeans(results_HPY)
+results_random_mean  = rowMeans(results_random)
+results_oracle_mean  = rowMeans(results_oracle)
+
+if(F){
+  save(result_HPY_mean,     file="./Data-and-Results/result_HPY_mean.RData")
+  save(results_random_mean, file="./Data-and-Results/results_random_mean.RData")
+  save(results_oracle_mean, file="./Data-and-Results/results_oracle_mean.RData")
+}
+
 
 ################################################################################
 # Plot results 
 
 # prepare data matrix
 num_model_to_compare = 1
-names = c("HPY")
+names = c("HPY", "Uniform", "Oracle")
 model = c()
 for(mm in 1:num_model_to_compare){
   model = c(model, rep(names[mm], new_samples))
@@ -78,7 +97,7 @@ for(mm in 1:num_model_to_compare){
 data_plot <- data.frame(
   time = rep(1:new_samples, num_model_to_compare),
   model = model,
-  value = c(result_avg_HPY))
+  value = c(result_HPY_mean, results_random_mean, results_oracle_mean))
 
 if(!ordered){
   # Plotting
@@ -109,4 +128,6 @@ if(!ordered){
 }
 
 # Average number of species discovered 
-sum(diff(result_avg_HPY)) / new_samples
+sum(diff(result_HPY_mean))     / new_samples
+sum(diff(results_random_mean)) / new_samples
+sum(diff(results_oracle_mean)) / new_samples
