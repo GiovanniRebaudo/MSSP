@@ -864,7 +864,7 @@ HPY_MAB <- function(data,
   X_ji_mat    = data[,1:init_samples]
   uniqDish    = c()
   for(j in 1:J){
-    uniqDish    = unique(c(uniqDish,unique(as.integer(X_ji_mat[j,]))))
+    uniqDish  = unique(c(uniqDish,unique(as.integer(X_ji_mat[j,]))))
   }
   uniqDishall = unique(c(uniqDish,unique(as.integer(data))))
   
@@ -911,8 +911,8 @@ HPY_MAB <- function(data,
   )
   
   # Run MCMC
-  out = HPYP_MCMC_fct(
-    nGibbsUpdates  = 4e3,
+  init_all = HPYP_MCMC_fct(
+    nGibbsUpdates  = 1e3,
     seed           = 123,
     # seed to be fixed
     Hyperprior     = T,
@@ -972,7 +972,7 @@ HPY_MAB <- function(data,
       newObsLab = max(dishAllocation)+1
       
       if(newObs!=newObsLab){
-        temp = max(c(dishAllocation,max(X)))+1
+        temp = max(c(dishAllocation,max(data)))+1
         data = plyr::mapvalues(data, 
                                from = c(newObsLab, newObs),
                                to   = c(temp, newObsLab),
@@ -992,7 +992,7 @@ HPY_MAB <- function(data,
         # seed to be fixed
         Hyperprior     = T,
         # learn hyperpar via full Bayes if Hyperprior==T
-        niter_MH       = 5,
+        niter_MH       = niter_MH,
         # number of MH iterations for hyperpar update within each steps
         Data_vec       = init_all$dishAllocation,
         shape_theta    = a_alpha, 

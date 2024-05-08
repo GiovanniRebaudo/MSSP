@@ -119,7 +119,7 @@ init_all = HPYP_MCMC_fct(
 
 # Run MCMC
 out = HPYP_MCMC_fct(
-  nGibbsUpdates  = 2e3,
+  nGibbsUpdates  = 1e3,
   seed           = 123,
   # seed to be fixed
   Hyperprior     = T,
@@ -142,9 +142,10 @@ for (iter_new in 1:new_samples){
   
   #
   nGibbsUpd = nrow(prob_new_species)
-  burnin    = min(10, nGibbsUpd/2)
+  burnin    = min(100, nGibbsUpd/2)
   # Choose optimal arm
-  newj = which.max(colMeans(prob_new_species[(burnin+1):nGibbsUpd,]))
+  where_vec = which(est_prob == max(est_prob))
+  newj = ifelse(length(where_vec)>1, sample(where_vec,1), where_vec)
   # Pick new obs
   newObs = X[newj, init_samples+iter_new]
   
@@ -172,7 +173,7 @@ for (iter_new in 1:new_samples){
   if(iter_new<new_samples){
     # Run MCMC
     out = HPYP_MCMC_fct(
-      nGibbsUpdates  = 400,
+      nGibbsUpdates  = 4e2,
       seed           = 123,
       # seed to be fixed
       Hyperprior     = T,
@@ -187,6 +188,7 @@ for (iter_new in 1:new_samples){
       output         = "prob and last"
     )
   }
+  print(iter_new)
 }
 
 

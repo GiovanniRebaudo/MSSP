@@ -50,13 +50,13 @@ for(replica in 1:tot_replica){
   X = sample_from_pop_all(truth = pmfs, size = init_samples + new_samples,
                           seed = replica, verbose = FALSE)
   
-  #solve MAB decisions via HPY
+  # #solve MAB decisions via HPY
   results_HPY_temp = HPY_MAB(data = X,
                              a_alpha = 1, b_alpha = 1,
-                             init_samples = init_samples, 
-                             new_samples = new_samples, 
+                             init_samples = init_samples,
+                             new_samples = new_samples,
                              a_sigma = 1, b_sigma = 2,
-                             burnin = 100, iters = 300, seed = 0, 
+                             burnin = 100, iters = 300, seed = 0,
                              niter_MH = 10, ada_step = 10,
                              ada_thresh = 0.44, r_ada_input = 0)
   #solve MAB decision via uniform
@@ -68,7 +68,7 @@ for(replica in 1:tot_replica){
   results_oracle_temp = oracle_MAB(data = X, pmfs = pmfs)
   results_oracle[,replica] = results_oracle_temp$discoveries
   
-
+  #solve MAB decision via HPY
   results_HPY[,replica] = results_HPY_temp$discoveries
   est_prob_new_HPY[[replica]] = results_HPY_temp$probs
 }
@@ -88,8 +88,8 @@ if(F){
 # Plot results 
 
 # prepare data matrix
-num_model_to_compare = 1
 names = c("HPY", "Uniform", "Oracle")
+num_model_to_compare = length(names)
 model = c()
 for(mm in 1:num_model_to_compare){
   model = c(model, rep(names[mm], new_samples))
