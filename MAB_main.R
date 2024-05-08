@@ -120,7 +120,6 @@ for(seed in 1:tot_replica){
   results_oracle[,replica] = results_oracle_temp$discoveries
   est_prob_new_oracle[[replica]] = results_oracle_temp$probs
 }
-
 results_plusDP_mean = rowMeans( results_plusDP )
 results_plusPY_mean = rowMeans( results_plusPY )
 results_indepDP_mean = rowMeans( results_indepDP )
@@ -133,8 +132,8 @@ results_oracle_mean  = rowMeans( results_oracle )
 #plot results 
 
 # prepare data matrix
-num_model_to_compare = 6
-names = c("Uniform", "Ind DP", "Ind PY", "+DP", "+PY", "Oracle")
+num_model_to_compare = 4
+names = c("Uniform", "Ind DP", "Ind PY", "Oracle")
 model = c()
 for(mm in 1:num_model_to_compare){
   model = c(model, rep(names[mm], new_samples))
@@ -143,20 +142,47 @@ data_plot <- data.frame(
   time = rep(1:new_samples, num_model_to_compare),
   model = model,
   value = c(results_random_mean, results_indepDP_mean, results_indepPY_mean,
+            results_oracle_mean))
+
+# Plotting
+ggplot(data_plot, aes(x = time, y = value, color = as.factor(model)) )+
+  geom_line(aes(linetype = as.factor(model)), size=1.2) +
+  theme_minimal() +  # Use minimal theme for polished look
+  labs(x = "Additional Samples", y = "Discoveries") +  # Set axis labels
+  scale_color_brewer(palette = "Dark2") +  # Choose color palette
+  theme(text = element_text(size = 20),
+    legend.position = "right",  # Position legend
+    legend.title = element_blank(),
+    plot.title = element_text(hjust = 0.5)  # Center plot title
+  ) +
+  ggtitle("Independent Processes")  # Set plot title
+
+# prepare data matrix
+num_model_to_compare = 4
+names = c("Uniform", "+DP", "+PY", "Oracle")
+model = c()
+for(mm in 1:num_model_to_compare){
+  model = c(model, rep(names[mm], new_samples))
+}
+data_plot <- data.frame(
+  time = rep(1:new_samples, num_model_to_compare),
+  model = model,
+  value = c(results_random_mean,
             results_plusDP_mean, results_plusPY_mean,
             results_oracle_mean))
 
+# Plotting
 ggplot(data_plot, aes(x = time, y = value, color = as.factor(model)) )+
-    geom_line(aes(linetype = as.factor(model)), size=1.2) +
-    theme_minimal() +  # Use minimal theme for polished look
-    labs(x = "Additional Samples", y = "Discoveries") +  # Set axis labels
-    scale_color_brewer(palette = "Dark2") +  # Choose color palette
-    theme(
-      legend.position = "right",  # Position legend
-      legend.title = element_blank(),
-      plot.title = element_text(hjust = 0.5)  # Center plot title
-    ) +
-    ggtitle("Simulated data (unordered Zipf) - results")  # Set plot title
+  geom_line(aes(linetype = as.factor(model)), size=1.2) +
+  theme_minimal() +  # Use minimal theme for polished look
+  labs(x = "Additional Samples", y = "Discoveries") +  # Set axis labels
+  scale_color_brewer(palette = "Dark2") +  # Choose color palette
+  theme(text = element_text(size = 20),
+    legend.position = "right",  # Position legend
+    legend.title = element_blank(),
+    plot.title = element_text(hjust = 0.5)  # Center plot title
+  ) +
+  ggtitle("Additive processes")  # Set plot title
 
 #average number of species discovered 
 sum(diff(results_plusDP_mean)) / new_samples
