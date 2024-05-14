@@ -43,8 +43,11 @@ results_oracle   = matrix(NA, nrow = new_samples, ncol = tot_replica)
 est_prob_new_HPY = vector("list", tot_replica)
 est_prob_new_HDP = vector("list", tot_replica)
 
+HPY_ind = T
+
 
 ############### Gibbs samplers
+# 1:tot_replica
 for(replica in 1:tot_replica){
   cat("\nReplica", replica, "out of", tot_replica, "\n")
   
@@ -52,7 +55,7 @@ for(replica in 1:tot_replica){
   X = sample_from_pop_all(truth = pmfs, size = init_samples + new_samples,
                           seed = replica, verbose = FALSE)
   
-  if(F){
+  if(HPY_ind){
     #solve MAB decisions via HPY
     results_HPY_temp = HPY_MAB(data = X,
                                a_alpha = 1, b_alpha = 1,
@@ -87,8 +90,9 @@ for(replica in 1:tot_replica){
   results_oracle[,replica] = results_oracle_temp$discoveries
 }
 
-if(F){
-  result_HPY_mean      = rowMeans(results_HPY)
+if(HPY_ind){
+  # result_HPY_mean      = rowMeans(results_HPY)
+  result_HPY_mean      = results_HPY[,2]
 } else {
   load("./Data-and-Results/result_HPY_mean.RData")
 }
@@ -96,6 +100,10 @@ if(F){
 result_HDP_mean      = rowMeans(results_HDP)
 results_random_mean  = rowMeans(results_random)
 results_oracle_mean  = rowMeans(results_oracle)
+
+result_HDP_mean      = results_HDP[,2]
+results_random_mean  = results_random[,2]
+results_oracle_mean  = results_oracle[,2]
 
 if(F){
   save(result_HPY_mean,     file="./Data-and-Results/result_HPY_mean.RData")

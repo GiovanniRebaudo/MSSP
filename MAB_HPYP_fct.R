@@ -566,8 +566,12 @@ HPY_MAB <- function(data,
       
       indecesTablesInRestaurant = 
         (1:maxTableIndex)[tableRestaurantAllocation==newPop]
-      currentTable = which(tablesValues[indecesTablesInRestaurant] == 
-                             newDataPoint)[1]
+      
+      indecesPossibleTables = (tablesValues[indecesTablesInRestaurant] ==
+                                 newDataPoint)
+      
+      currentTable = (indecesTablesInRestaurant[indecesPossibleTables])[1]
+      
       tableAllocation           = c(tableAllocation[labels_1toIj], currentTable,
                                     tableAllocation[-labels_1toIj])
       
@@ -1095,7 +1099,7 @@ HDP_MAB <- function(data,
     prob_new_species_fct <- function(model="HDP"){
       if(model=="HDP"){
         prob_new_species_vec = theta0/(nTables + theta0) *
-          theta_vec/(theta_vec +I_j_vec)
+          theta_vec/(theta_vec + I_j_vec)
       }
       return(prob_new_species_vec)
     }
@@ -1345,7 +1349,6 @@ HDP_MAB <- function(data,
         nTablesInRestaurantAcrossGibbs = nTablesInRestaurantAcrossGibbs,
         theta0AcrossGibbs              = theta0AcrossGibbs,
         prob_new_species               = prob_new_species,
-        Prop_sd_logit_sig_j            = Prop_sd_logit_sig_j,
         Prop_sd_log_theta_j            = Prop_sd_log_theta_j,
         Move_theta_j_out               = Move_theta_j_out))
       
@@ -1428,10 +1431,15 @@ HDP_MAB <- function(data,
       tablesValues              = tablesValues
       # Assign obs to the first table in the restaurant serving the dish
       
+      
       indecesTablesInRestaurant = 
         (1:maxTableIndex)[tableRestaurantAllocation==newPop]
-      currentTable = which(tablesValues[indecesTablesInRestaurant] == 
-                             newDataPoint)[1]
+      
+      indecesPossibleTables = (tablesValues[indecesTablesInRestaurant] ==
+                                 newDataPoint)
+      
+      currentTable = (indecesTablesInRestaurant[indecesPossibleTables])[1]
+      
       tableAllocation           = c(tableAllocation[labels_1toIj], currentTable,
                                     tableAllocation[-labels_1toIj])
       

@@ -673,7 +673,7 @@ HPYP_MCMC_fct = function(
             Acc_prob_sigma = a_sigma*(log_sigma_prop - log_sigma_old)+
               b_sigma*(log(1-sigma_prop) - log(1-sigma_old))
             
-            # Likelihood part (it can be made slightly more effiecient TBD)
+            # Likelihood part (it can be made slightly more efficient TBD)
             indecesTablesInRestaurant = 
               (1:maxTableIndex)[tableRestaurantAllocation==indexRestaurant]
             q_j_vec = nPeopleAtTable[indecesTablesInRestaurant]
@@ -862,8 +862,9 @@ initSeqHSSP_fct <- function(
     
     indecesTablesInRestaurant = 
       (1:maxTableIndex)[tableRestaurantAllocation==newPop]
-    currentTable = which(tablesValues[indecesTablesInRestaurant] == 
-                           newDataPoint)[1]
+    
+    currentTable = (tablesValues[indecesTablesInRestaurant]==newDataPoint)[1]
+    
     tableAllocation           = c(tableAllocation[labels_1toIj], currentTable,
                                   tableAllocation[-labels_1toIj])
     
@@ -929,4 +930,358 @@ initSeqHSSP_fct <- function(
          nFreeTables               = nFreeTables,
          freeTables                = freeTables)
   )
+}
+
+
+HDP_MCMC_fct = function(
+    seed       = 123,
+    # seed to be fixed
+    Hyperprior = F,
+    # learn hyperpar via full Bayes if  Hyperprior==T
+    niter_MH   = 5,
+    # number of MH iterations for hyperpar update within each steps
+    I_j_vec = init_all$I_j_vec,
+    Data_vec,
+    nGibbsUpdates,
+    
+    # Numerically 0 lowerbound hyperpar
+    epsilon = 1e-5,
+    # Numerically infinite upperbound hyperpar
+    Max_val = 1e10,
+    # Initialized values and quantities named for MCMC: Start here
+    theta_vec                 = init_all$theta_vec,
+    theta0                    = init_all$theta0,
+    tablesValues              = init_all$tablesValues,
+    tableAllocation           = init_all$tableAllocation,
+    tableRestaurantAllocation = init_all$tableRestaurantAllocation,
+    nPeopleAtTable            = init_all$nPeopleAtTable,
+    nTables                   = init_all$nTables,
+    maxTableIndex             = init_all$maxTableIndex,
+    nTablesInRestaurant       = init_all$nTablesInRestaurant,
+    observationDishAllocation = init_all$observationDishAllocation,
+    nFreeTables               = init_all$nFreeTables,
+    freeTables                = init_all$freeTables,
+    # Initialized values and quantities named for MCMC: End here
+    shape_theta, 
+    # common shape of theta_0, ..., theta_J gamma prior
+    rate_theta,
+    # Adaptive Metropolis quantities
+    ada_step    = 50,
+    ada_thresh  = 0.44,
+    r_ada       = 0,
+    # Output prob new, prob new and last iteration 
+    #or additional values for checks
+    output   = c("prob_new", "prob and last", "all")
+){
+  
+  # Functions to compute probabilities of possible past (for observed dish) tables 
+  # Different hyperparameters in different populations
+  prob_Table_insample_j = function(model="HDP"){
+    if (model=="HDP"){
+      
+      theta_j = theta_vec[indexRestaurant]
+      # Function to compute prob assignment of past tables
+      probNewTable = (nTablesServingCurrentDish)/ (nTables + theta0)*theta_j
+      
+      probs = c(nPeopleAtTable[indecesTablesInRestaurant][indecesPossibleTables],
+                probNewTable)
+    } else if (model=="HGnedin"){
+      # TBD
+    }
+    return(probs)
+  }
+  
+  # compute the predictive prob of new species 
+  # conditional on tables and hyperparameters values
+  prob_new_species_fct <- function(model="HDP"){
+    if(model=="HDP"){
+      prob_new_species_vec = theta0/(nTables + theta0) *
+        theta_vec/(theta_vec + I_j_vec)
+    }
+    return(prob_new_species_vec)
+  }
+  
+  
+  set.seed(seed)
+  nRest                       = length(I_j_vec)
+  nObs                        = sum(I_j_vec)
+  dishAllocation              = Data_vec
+  nDishes                     = length(unique(Data_vec))
+  
+  if(Hyperprior){
+    # Quantities for adaptive Metropolis quantities
+    Prop_sd_log_theta_j = rep(1, nRest+1)
+    Move_theta_j_out    = matrix(nrow=nRest+1, ncol=nGibbsUpdates)
+    # We can save less if needed e.g., matrix(nrow=J+1, ncol=ada_step)
+  }
+  
+  # Quantities where to save output
+  prob_new_species = matrix(0,nrow = nGibbsUpdates, ncol = nRest)
+  
+  if(output=="all"){
+    tableAllocationAcrossGibbs = matrix(0, nrow = nGibbsUpdates, ncol = nObs)
+    theta_vecAcrossGibbs = matrix(0, nrow = nGibbsUpdates, ncol = nRest)
+    nTablesInRestaurantAcrossGibbs = matrix(0, nrow=nGibbsUpdates, ncol=nRest)
+    theta0AcrossGibbs = double(nGibbsUpdates)
+  }
+  
+  for (iter in 1:nGibbsUpdates) {
+    ### ALLOCATE IN-SAMPLE OBSERVATIONS TO TABLES
+    #if(iter%%200==0){print(iter)}
+    indexCustomerGlobal = 1
+    for (indexRestaurant in 1:nRest) {
+      
+      for (indexCustomerRestaurant in 1:I_j_vec[indexRestaurant]) {
+        indecesTablesInRestaurant = 
+          (1:maxTableIndex)[tableRestaurantAllocation==indexRestaurant]
+        currentTable = tableAllocation[indexCustomerGlobal] # get the current table
+        currentDish  = dishAllocation[indexCustomerGlobal] # get the current dish
+        nPeopleAtTable[currentTable] = nPeopleAtTable[currentTable] - 1
+        
+        if(nPeopleAtTable[currentTable] == 0) { # free the table
+          nFreeTables = nFreeTables +1
+          freeTables = c(currentTable,freeTables)
+          tableRestaurantAllocation[currentTable] = -1
+          nTablesInRestaurant[indexRestaurant] = nTablesInRestaurant[indexRestaurant] - 1
+          nTables = nTables - 1
+          tablesValues[currentTable] = -1
+        }
+        
+        indecesPossibleTables = (tablesValues[indecesTablesInRestaurant] ==
+                                   dishAllocation[indexCustomerGlobal])
+        
+        if(sum(indecesPossibleTables)==0){
+          # if no tables in the restaurant is serving the observed dish
+          newTableAllocation = -1 # open a new table
+        } else {
+          # if there are tables in the restaurant serving the observed dish       
+          possibleTables = c(indecesTablesInRestaurant[indecesPossibleTables],-1)
+          
+          nTablesServingCurrentDish = 
+            sum(tablesValues == dishAllocation[indexCustomerGlobal])
+          
+          probs = prob_Table_insample_j(model="HDP")
+          
+          newTableAllocation = sample(possibleTables, 1, replace = F, prob = probs)
+        }
+        
+        if(newTableAllocation < 0) {
+          nTables = nTables + 1
+          if(nFreeTables > 0) { # pick the first free table
+            newTableAllocation = freeTables[1]
+            freeTables = freeTables[-1]
+            nFreeTables = nFreeTables - 1
+            nPeopleAtTable[newTableAllocation] = 1
+            nTablesInRestaurant[indexRestaurant] = 
+              nTablesInRestaurant[indexRestaurant] + 1
+            tablesValues[newTableAllocation] = dishAllocation[indexCustomerGlobal]
+          } else { # create a new table
+            nTablesInRestaurant[indexRestaurant] = 
+              nTablesInRestaurant[indexRestaurant] + 1
+            maxTableIndex = maxTableIndex + 1
+            newTableAllocation = maxTableIndex
+            nPeopleAtTable = c(nPeopleAtTable,1)
+            tablesValues = c(tablesValues,dishAllocation[indexCustomerGlobal])
+          }
+          # assign the table to the restaurant
+          tableRestaurantAllocation[newTableAllocation] = indexRestaurant
+        } else{ # the sampled table is already occupied in the restaurant --> 
+          # just update the relevant quantities
+          nPeopleAtTable[newTableAllocation] = 
+            nPeopleAtTable[newTableAllocation] + 1
+        }
+        
+        tableAllocation[indexCustomerGlobal] = newTableAllocation
+        
+        # If we want to save allocation across Gibbs
+        # tableAllocationAcrossGibbs[iter,indexCustomerGlobal] = newTableAllocation
+        
+        indexCustomerGlobal = indexCustomerGlobal + 1
+      }
+    }
+    
+    if(Hyperprior){
+      # MH within Gibbs step for hyperparameters
+      if(nDishes>1){
+        vec_1_to_D_1 = 1:(nDishes-1)
+      }
+      
+      
+      ell_d_vec = integer(nDishes)
+      for (d in unique(dishAllocation)){
+        ell_d_vec[d] = sum(tablesValues == d)
+      }
+      
+      # niter_MH is the number of iteration of the MH within each Gibbs iteration
+      for (iter_MH in 1:niter_MH){
+        
+        # Update parameters \theta_0
+        theta_old      = theta0
+        log_theta_old  = log(theta_old)
+        # Propose \theta_0
+        log_theta_prop = rnorm(1, mean = log_theta_old, 
+                               sd=Prop_sd_log_theta_j[nRest+1])
+        # nRest+1 is position of \theta_0
+        theta_prop     = exp(log_theta_prop)
+        
+        if(epsilon<theta_prop && theta_prop<Max_val){
+          # Acc_prob_theta is on the logarithmic scale (consider Jacobian)
+          # Prior and Jacobian part
+          Acc_prob_theta = shape_theta*(log_theta_prop - log_theta_old)+
+            rate_theta*(theta_old-theta_prop)
+          
+          # Likelihood part
+          if(nDishes>1){
+            Acc_prob_theta = Acc_prob_theta +
+              sum(log(theta_prop + vec_1_to_D_1 * 0) - 
+                    log(theta_old  + vec_1_to_D_1 * 0)) +
+              lgamma(theta_old + nTables) - lgamma(theta_prop + nTables) +
+              lgamma(theta_prop +1)       - lgamma(theta_old +1)
+          } else {
+            Acc_prob_theta = Acc_prob_theta +
+              lgamma(theta_old + nTables) - lgamma(theta_prop + nTables) +
+              lgamma(theta_prop +1)       - lgamma(theta_old +1)
+          }
+          
+          
+          
+          move_theta         = (log(runif(1)) < Acc_prob_theta)
+          theta_old          = ifelse(move_theta, theta_prop, theta_old)
+        } else {
+          move_theta = FALSE
+        }
+        
+        theta0            = theta_old
+        # Save acceptance
+        if (iter_MH == niter_MH){
+          Move_theta_j_out[nRest+1, iter] = move_theta
+        }
+        
+        for (indexRestaurant in 1:nRest) {
+          # Update parameters \theta_j, j = 1, ..., J
+          theta_old      = theta_vec[indexRestaurant]
+          log_theta_old  = log(theta_old)
+          # Propose from adaptive Gaussian on transformed space
+          log_theta_prop = rnorm(1, mean = log_theta_old, 
+                                 sd=Prop_sd_log_theta_j[indexRestaurant])
+          theta_prop     = exp(log_theta_prop)
+          
+          if(epsilon<theta_prop && theta_prop<Max_val){
+            
+            # Acc_prob_theta is on the logarithmic scale (consider Jacobian)
+            # Prior Gamma and Jacobian part
+            Acc_prob_theta = shape_theta*(log_theta_prop - log_theta_old)+
+              rate_theta*(theta_old-theta_prop)
+            
+            # Quantities useful in the log Likelihood part (PYP log EPPF)
+            I_j              = I_j_vec[indexRestaurant]
+            ell_j            = nTablesInRestaurant[indexRestaurant]
+            if(ell_j>1){
+              vec_1_to_ell_j_1 = 1:(ell_j-1)
+              
+              # Likelihood part (PYP log EPPF)
+              Acc_prob_theta = Acc_prob_theta +
+                sum(log(theta_prop  + vec_1_to_ell_j_1 *0) - 
+                      log(theta_old + vec_1_to_ell_j_1 *0)) +
+                lgamma(theta_old + I_j) - lgamma(theta_prop + I_j) +
+                lgamma(theta_prop +1)   - lgamma(theta_old +1)
+              # End: Likelihood part (PYP log EPPF)
+            } else {
+              Acc_prob_theta = Acc_prob_theta +
+                lgamma(theta_old + I_j) - lgamma(theta_prop + I_j) +
+                lgamma(theta_prop +1)   - lgamma(theta_old +1)
+            }
+            
+            move_theta     = (log(runif(1)) < Acc_prob_theta)
+            
+            if (move_theta){
+              theta_old = theta_prop
+              theta_vec[indexRestaurant] = theta_old
+            }
+          } else {
+            move_theta = FALSE
+          }
+          # Save acceptance
+          if (iter_MH == niter_MH){
+            Move_theta_j_out[indexRestaurant, iter] = move_theta
+          }
+        }
+      }  
+      # End MH within Gibbs step for hyperparameters
+      
+      # Update proposal adaptive MH steps
+      if(iter%%ada_step == 0){
+        r_ada                    = r_ada + ada_step
+        ada_delta                = min(0.01, 1/sqrt(iter))
+        seq_ada_step             = (r_ada-ada_step):r_ada
+        
+        # (Ada)
+        # Update proposal for \theta_j, j = 0, 1, ..., J
+        Accept_theta_j      = apply(Move_theta_j_out[,seq_ada_step], 1, mean)
+        Dec_which_theta_j   = Accept_theta_j < ada_thresh
+        Prop_sd_log_theta_j = ifelse(Dec_which_theta_j, 
+                                     exp(log(Prop_sd_log_theta_j) - ada_delta), 
+                                     exp(log(Prop_sd_log_theta_j) + ada_delta))
+      }
+      # End Update proposal adaptive MH steps
+    }
+    
+    # compute and save the vector of probabilities of new species
+    prob_new_species[iter,] = prob_new_species_fct("HDP")
+    
+    if(output=="all"){
+      tableAllocationAcrossGibbs[iter,] = tableAllocation
+      theta_vecAcrossGibbs[iter,] = theta_vec
+      nTablesInRestaurantAcrossGibbs[iter,] = nTablesInRestaurant
+      theta0AcrossGibbs[iter] = theta0
+    }
+  }
+  
+  ## Output
+  if(output=="all" && Hyperprior){
+    
+    return(list(
+      tableAllocationAcrossGibbs     = tableAllocationAcrossGibbs,
+      theta_vecAcrossGibbs           = theta_vecAcrossGibbs,
+      nTablesInRestaurantAcrossGibbs = nTablesInRestaurantAcrossGibbs,
+      theta0AcrossGibbs              = theta0AcrossGibbs,
+      prob_new_species               = prob_new_species,
+      Prop_sd_log_theta_j            = Prop_sd_log_theta_j,
+      Move_theta_j_out               = Move_theta_j_out))
+    
+  } else if (output=="all" && !Hyperprior){
+    
+    return(list(
+      tableAllocationAcrossGibbs     = tableAllocationAcrossGibbs,
+      theta_vecAcrossGibbs           = theta_vecAcrossGibbs,
+      nTablesInRestaurantAcrossGibbs = nTablesInRestaurantAcrossGibbs,
+      theta0AcrossGibbs              = theta0AcrossGibbs,
+      prob_new_species               = prob_new_species))
+  }
+  
+  else if (output=="prob_new"){
+    
+    return(prob_new_species)
+    
+  } else if (output=="prob and last"){
+    
+    return(list(
+      theta_vec                 = theta_vec,
+      theta0                    = theta0,
+      tablesValues              = tablesValues,
+      tableAllocation           = tableAllocation,
+      tableRestaurantAllocation = tableRestaurantAllocation,
+      nPeopleAtTable            = nPeopleAtTable,
+      nTables                   = nTables,
+      maxTableIndex             = maxTableIndex,
+      nTablesInRestaurant       = nTablesInRestaurant,
+      observationDishAllocation = observationDishAllocation,
+      nFreeTables               = nFreeTables,
+      freeTables                = freeTables,
+      dishAllocation            = dishAllocation,
+      I_j_vec                   = I_j_vec,
+      prob_new_species          = prob_new_species))
+  } else {
+    print("no output")
+  }
 }
