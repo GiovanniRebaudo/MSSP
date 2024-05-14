@@ -47,8 +47,9 @@ HPY_ind = T
 
 
 ############### Gibbs samplers
-# 1:tot_replica
-for(replica in 1:tot_replica){
+all_replica = 1:tot_replica
+all_replica =3
+for(replica in all_replica){
   cat("\nReplica", replica, "out of", tot_replica, "\n")
   
   ############### Sample observations for fair comparison of methods
@@ -92,7 +93,7 @@ for(replica in 1:tot_replica){
 
 if(HPY_ind){
   # result_HPY_mean      = rowMeans(results_HPY)
-  result_HPY_mean      = results_HPY[,2]
+  result_HPY_mean      = results_HPY[,all_replica]
 } else {
   load("./Data-and-Results/result_HPY_mean.RData")
 }
@@ -101,9 +102,9 @@ result_HDP_mean      = rowMeans(results_HDP)
 results_random_mean  = rowMeans(results_random)
 results_oracle_mean  = rowMeans(results_oracle)
 
-result_HDP_mean      = results_HDP[,2]
-results_random_mean  = results_random[,2]
-results_oracle_mean  = results_oracle[,2]
+result_HDP_mean      = results_HDP[,all_replica]
+results_random_mean  = results_random[,all_replica]
+results_oracle_mean  = results_oracle[,all_replica]
 
 if(F){
   save(result_HPY_mean,     file="./Data-and-Results/result_HPY_mean.RData")

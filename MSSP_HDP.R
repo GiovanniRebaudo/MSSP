@@ -82,7 +82,7 @@ shape_theta    = 1
 rate_theta     = 1
 a_sigma        = 1 
 b_sigma        = 2
-niter_MH       = 5
+niter_MH       = 10
 
 # save more quantities in MCMC for debugging and convergence checks
 species_discovered = logical(new_samples)
@@ -117,7 +117,7 @@ init_all = HDP_MCMC_fct(
 
 # Run MCMC
 out = HDP_MCMC_fct(
-  nGibbsUpdates  = 1e3,
+  nGibbsUpdates  = 1e4,
   seed           = 123,
   # seed to be fixed
   Hyperprior     = T,
@@ -130,6 +130,15 @@ out = HDP_MCMC_fct(
   rate_theta     = rate_theta, 
   output         = "all"
 )
+
+### BEGIN CHECK
+str(out)
+plot(out$theta0AcrossGibbs, type="l")
+matplot(out$theta_vecAcrossGibbs, type="l")
+colMeans(out$prob_new_species)
+### END CHECK
+
+stop()
 
 for (iter_new in 1:new_samples){
   # save 

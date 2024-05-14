@@ -857,13 +857,11 @@ initSeqHSSP_fct <- function(
   
   if (newDataPoint %in% Data_vec[labels_Ij1toI_j]) {
     # If the dish of new obs is already available in the pop we do not add tables
-    tablesValues              = tablesValues
+    # tablesValues              = tablesValues
     # Assign obs to the first table in the restaurant serving the dish
     
-    indecesTablesInRestaurant = 
-      (1:maxTableIndex)[tableRestaurantAllocation==newPop]
-    
-    currentTable = (tablesValues[indecesTablesInRestaurant]==newDataPoint)[1]
+    currentTable = (1:maxTableIndex)[tablesValues==newDataPoint & 
+                                       tableRestaurantAllocation==newPop]
     
     tableAllocation           = c(tableAllocation[labels_1toIj], currentTable,
                                   tableAllocation[-labels_1toIj])
@@ -1102,16 +1100,6 @@ HDP_MCMC_fct = function(
     
     if(Hyperprior){
       # MH within Gibbs step for hyperparameters
-      if(nDishes>1){
-        vec_1_to_D_1 = 1:(nDishes-1)
-      }
-      
-      
-      ell_d_vec = integer(nDishes)
-      for (d in unique(dishAllocation)){
-        ell_d_vec[d] = sum(tablesValues == d)
-      }
-      
       # niter_MH is the number of iteration of the MH within each Gibbs iteration
       for (iter_MH in 1:niter_MH){
         
@@ -1128,21 +1116,13 @@ HDP_MCMC_fct = function(
           # Acc_prob_theta is on the logarithmic scale (consider Jacobian)
           # Prior and Jacobian part
           Acc_prob_theta = shape_theta*(log_theta_prop - log_theta_old)+
-            rate_theta*(theta_old-theta_prop)
+            rate_theta*(theta_old-theta_prop) 
           
           # Likelihood part
-          if(nDishes>1){
             Acc_prob_theta = Acc_prob_theta +
-              sum(log(theta_prop + vec_1_to_D_1 * 0) - 
-                    log(theta_old  + vec_1_to_D_1 * 0)) +
+              (nDishes-1)*(log(theta_prop) - log(theta_old)) +
               lgamma(theta_old + nTables) - lgamma(theta_prop + nTables) +
               lgamma(theta_prop +1)       - lgamma(theta_old +1)
-          } else {
-            Acc_prob_theta = Acc_prob_theta +
-              lgamma(theta_old + nTables) - lgamma(theta_prop + nTables) +
-              lgamma(theta_prop +1)       - lgamma(theta_old +1)
-          }
-          
           
           
           move_theta         = (log(runif(1)) < Acc_prob_theta)
@@ -1176,27 +1156,20 @@ HDP_MCMC_fct = function(
             # Quantities useful in the log Likelihood part (PYP log EPPF)
             I_j              = I_j_vec[indexRestaurant]
             ell_j            = nTablesInRestaurant[indexRestaurant]
-            if(ell_j>1){
-              vec_1_to_ell_j_1 = 1:(ell_j-1)
               
-              # Likelihood part (PYP log EPPF)
-              Acc_prob_theta = Acc_prob_theta +
-                sum(log(theta_prop  + vec_1_to_ell_j_1 *0) - 
-                      log(theta_old + vec_1_to_ell_j_1 *0)) +
-                lgamma(theta_old + I_j) - lgamma(theta_prop + I_j) +
-                lgamma(theta_prop +1)   - lgamma(theta_old +1)
-              # End: Likelihood part (PYP log EPPF)
-            } else {
-              Acc_prob_theta = Acc_prob_theta +
-                lgamma(theta_old + I_j) - lgamma(theta_prop + I_j) +
-                lgamma(theta_prop +1)   - lgamma(theta_old +1)
-            }
+            # Likelihood part (PYP log EPPF)
+            Acc_prob_theta = Acc_prob_theta +
+              (ell_j-1)*(log(theta_prop) - log(theta_old)) +
+              lgamma(theta_old + I_j) - lgamma(theta_prop + I_j) +
+              lgamma(theta_prop +1)   - lgamma(theta_old +1)
+            # End: Likelihood part (PYP log EPPF)
+         
             
             move_theta     = (log(runif(1)) < Acc_prob_theta)
             
             if (move_theta){
               theta_old = theta_prop
-              theta_vec[indexRestaurant] = theta_old
+              theta_vec[indexRestaurant] = theta_prop
             }
           } else {
             move_theta = FALSE

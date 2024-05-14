@@ -561,16 +561,11 @@ HPY_MAB <- function(data,
     
     if (newDataPoint %in% Data_vec[labels_Ij1toI_j]) {
       # If the dish of new obs is already available in the pop we do not add tables
-      tablesValues              = tablesValues
+      # tablesValues              = tablesValues
       # Assign obs to the first table in the restaurant serving the dish
       
-      indecesTablesInRestaurant = 
-        (1:maxTableIndex)[tableRestaurantAllocation==newPop]
-      
-      indecesPossibleTables = (tablesValues[indecesTablesInRestaurant] ==
-                                 newDataPoint)
-      
-      currentTable = (indecesTablesInRestaurant[indecesPossibleTables])[1]
+      currentTable = (1:maxTableIndex)[tablesValues==newDataPoint & 
+                                         tableRestaurantAllocation==newPop]
       
       tableAllocation           = c(tableAllocation[labels_1toIj], currentTable,
                                     tableAllocation[-labels_1toIj])
@@ -1428,17 +1423,11 @@ HDP_MAB <- function(data,
     
     if (newDataPoint %in% Data_vec[labels_Ij1toI_j]) {
       # If the dish of new obs is already available in the pop we do not add tables
-      tablesValues              = tablesValues
+      # tablesValues              = tablesValues
       # Assign obs to the first table in the restaurant serving the dish
       
-      
-      indecesTablesInRestaurant = 
-        (1:maxTableIndex)[tableRestaurantAllocation==newPop]
-      
-      indecesPossibleTables = (tablesValues[indecesTablesInRestaurant] ==
-                                 newDataPoint)
-      
-      currentTable = (indecesTablesInRestaurant[indecesPossibleTables])[1]
+      currentTable = (1:maxTableIndex)[tablesValues==newDataPoint & 
+                                         tableRestaurantAllocation==newPop]
       
       tableAllocation           = c(tableAllocation[labels_1toIj], currentTable,
                                     tableAllocation[-labels_1toIj])
