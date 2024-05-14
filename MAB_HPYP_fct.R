@@ -1782,6 +1782,9 @@ HDP_MAB <- function(data,
     # number of MH iterations for hyperpar update within each steps
     I_j_vec        = I_j_vec,
     Data_vec       = X_ji_vec,
+    ada_step       = ada_step,
+    ada_thresh     = ada_thresh,
+    r_ada          = r_ada_input,
     shape_theta    = a_alpha, 
     rate_theta     = b_alpha, 
     output         = "prob and last"
@@ -1836,6 +1839,9 @@ HDP_MAB <- function(data,
         niter_MH       = niter_MH,
         # number of MH iterations for hyperpar update within each steps
         Data_vec       = init_all$dishAllocation,
+        ada_step       = ada_step,
+        ada_thresh     = ada_thresh,
+        r_ada          = r_ada_input,
         shape_theta    = a_alpha, 
         rate_theta     = b_alpha, 
         output         = "prob and last"
