@@ -1048,6 +1048,7 @@ HDP_MAB <- function(data,
     # Numerically infinite upperbound hyperpar
     Max_val = 1e10,
     # Initialized values and quantities named for MCMC: Start here
+    theta_vec                 = init_all$theta_vec,
     theta0                    = init_all$theta0,
     tablesValues              = init_all$tablesValues,
     tableAllocation           = init_all$tableAllocation,
@@ -1250,7 +1251,10 @@ HDP_MAB <- function(data,
           }
           
           theta0            = theta_old
-          
+          # Save acceptance
+          if (iter_MH == niter_MH){
+            Move_theta_j_out[nRest+1, iter] = move_theta
+          }
           
           for (indexRestaurant in 1:nRest) {
             # Update parameters \theta_j, j = 1, ..., J
@@ -1296,7 +1300,10 @@ HDP_MAB <- function(data,
             } else {
               move_theta = FALSE
             }
-          
+            # Save acceptance
+            if (iter_MH == niter_MH){
+              Move_theta_j_out[indexRestaurant, iter] = move_theta
+            }
           }
         }  
         # End MH within Gibbs step for hyperparameters
@@ -1531,9 +1538,9 @@ HDP_MAB <- function(data,
     if(model =="HDP"){
       ##### INITIALIZATION OF HYPERPARAMETERS WITH THEIR PRIOR MEANS
       theta_vec = rep(shape_theta/rate_theta, nRest)
-
+      
       theta0  = shape_theta/rate_theta
-
+      
       ## Check parametrization of gamma and beta in R
       # rSamples =rgamma(1000, shape=shape_theta, rate=rate_theta)
       # mean(rSamples); shape_theta/rate_theta
@@ -1679,12 +1686,12 @@ HDP_MAB <- function(data,
         new_samples, "sequential sampling steps")
     cat("\n data should be a matrix with nrow equals to the number of pops")
   }
-  
+  cat("\n HDP \n")
   # Initializes the progress bar
   pb <- txtProgressBar(min = 0,      # Minimum value of the progress bar
                        max = new_samples, # Maximum value of the progress bar
                        style = 3,    # Progress bar style (also available style = 1 and style = 2)
-                       width = 20,   # Progress bar width. Defaults to getOption("width")
+                       width = 50,   # Progress bar width. Defaults to getOption("width")
                        char = "=")   # Character used to create the bar
   
   set.seed(seed)
@@ -1839,4 +1846,5 @@ HDP_MAB <- function(data,
   
   return(list(discoveries = cumsum(species_discovered), probs = prob_new_out))
 }
+
 
