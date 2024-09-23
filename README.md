@@ -16,13 +16,13 @@ More precisely, we provide the `R` code to implement inference and prediction un
 
 The repository contains the following:
 
-1. `MSSP_main.R` code to reproduce the main results in the article;
-2. `MSSP_fcts.R` functions needed to run the main code;
-3. `MSSP_HPYP.R` code to perform inference under the hierarchical Pitman-Yor (HPYP);
+1. `MAB_main_simul.R` code to reproduce the synthetic-data analysis results in the article;
+2. `MAB_main_trees.R` code to reproduce the real-data analysis results in the article;
+3. `Functions-and-Extra` functions and code needed to perform the analysis in `MAB_main_simul.R` and `MAB_main_trees.R`;
 4. `Data-and-Results` folder with data and results of the analyses.
 
 #### Questions or bugs
-For bug reporting purposes, e-mail [Beatrice Franzolini](https://beatricefranzolini.github.io) (franzolini@pm.me) and [Giovanni Rebaudo](https://giovannirebaudo.github.io).
+For bug reporting purposes, e-mail [Beatrice Franzolini](https://beatricefranzolini.github.io) (franzolini@pm.me) and [Giovanni Rebaudo](https://giovannirebaudo.github.io) (giovanni.rebaudo@unito.it).
 
 #### Citation
 Please cite the following publication if you use this repository in your research: [Fanzolini, Lijoi, Prünster and Rebaudo (2024+) **Multivariate species sampling process (MSSP).**](). *Working Paper*.
