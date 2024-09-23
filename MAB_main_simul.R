@@ -1,4 +1,4 @@
-#multiarmed bandit for species discovery via mSSP - simulation study
+# Multiarmed bandit for species discovery via mSSP - simulation study
 rm(list = ls())
 library(rstudioapi) # version 0.15.0
 library(ggplot2) # version 3.5.0 
@@ -8,15 +8,15 @@ library(readxl) # version 1.4.3
 #code to set the working directory to the current folder from RStudio
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-source("mSSPmab.R")
+source("Functions-and-Extra/mSSPmab.R")
 
-###############which true pmf? 
+############### true pmf
 J = 8
 pmfs = generate_zipf(param = c(rep(1.3, 4), rep(2, 4)), 
                      tot_species = 3000, j_species = 2500, seed = 0)
 
 ################"Plot prob of tie"
-#ptie matrix
+# Compute ptie matrix
 ptie = matrix(NA, nrow = J, ncol = J)
 row = matrix(rep(1:J,J), nrow = J)
 col = t(row)
@@ -31,7 +31,7 @@ for(j in 1:J){
 temp = t(ptie)
 ptie[row>col] = temp[row>col]
 
-#plot prob tie matrix
+# Plot prob tie matrix
 x = paste0("Group", seq(1,J))
 y = paste0("Group", seq(1,J))
 data = expand.grid(X=x, Y=y)
@@ -57,15 +57,15 @@ ggplot(data, aes(X, Y, fill= ptie)) +
 
 
 
-###############how many initial and new samples? 
-init_samples = 30 #per each pop
+############### How many initial and new samples? 
+init_samples = 30 # in each pop
 new_samples = 300
 
-###############how many replicas?
+############### How many replicas?
 seed_replicas = seq(1,20)
 tot_replica = length(seed_replicas)
 
-###############initialize matrices and list to save for more replicas
+############### Initialize matrices and list to save for more replicas
 results_plusDP = matrix(NA, nrow = new_samples, ncol = tot_replica) 
 results_plusPY = matrix(NA, nrow = new_samples, ncol = tot_replica)
 results_indepDP = matrix(NA, nrow = new_samples, ncol = tot_replica)
@@ -82,7 +82,7 @@ est_prob_new_indepPY = vector("list", tot_replica)
 est_prob_new_oracle = vector("list", tot_replica)
 est_prob_new_HDP = vector("list", tot_replica)
 est_prob_new_HPY = vector("list", tot_replica)
-###############gibbs samplers
+############### Gibbs samplers
 replica = 0
 for(seed in seed_replicas){
   
@@ -90,59 +90,59 @@ for(seed in seed_replicas){
   
   cat("\nReplica", replica, "out of", tot_replica, "\n")
   
-  ###############sample observations for fair comparison of methods
+  ############### Sample observations for fair comparison of methods
   X = sample_from_pop_all(truth = pmfs, size = init_samples + new_samples,
                           seed = seed, verbose = FALSE)
-  #solve MAB decision via uniform
+  # Solve MAB decision via uniform
   results_random_temp = uniform_MAB(data = X, new_samples = new_samples, 
                                     seed = 0)
   results_random[,replica] = results_random_temp$discoveries
   
-  #solve MAB decision via oracle
+  # Solve MAB decision via oracle
   results_oracle_temp = oracle_MAB(data = X, pmfs = pmfs, new_samples = new_samples)
   results_oracle[,replica] = results_oracle_temp$discoveries
   est_prob_new_oracle[[replica]] = results_oracle_temp$probs
   
-  #solve MAB decisions via indepDP
+  # Solve MAB decisions via indepDP
   results_indepDP_temp = indepDP_MAB(data = X, new_samples = new_samples, 
                                      seed = 0)
   results_indepDP[,replica] = results_indepDP_temp$discoveries
   est_prob_new_indepDP[[replica]] = results_indepDP_temp$probs
   
-  #solve MAB decisions via indepPY 
+  # Solve MAB decisions via indepPY 
   results_indepPY_temp = indepPY_MAB(data = X, new_samples = new_samples, seed = 0)
   results_indepPY[,replica] = results_indepPY_temp$discoveries
   est_prob_new_indepPY[[replica]] = results_indepPY_temp$probs
   
-  #solve MAB decisions via plusDP
+  # Solve MAB decisions via plusDP
   results_plusDP_temp = plusDP_MAB(data = X, new_samples = new_samples, 
                                    seed = 0)
   results_plusDP[,replica] = results_plusDP_temp$discoveries
   est_prob_new_plusDP[[replica]] = results_plusDP_temp$probs
   
-  #solve MAB decisions via plusPY
+  # Solve MAB decisions via plusPY
   results_plusPY_temp = plusPY_MAB(data = X, new_samples = new_samples, 
                                    seed = 0)
   results_plusPY[,replica] = results_plusPY_temp$discoveries
   est_prob_new_plusPY[[replica]] = results_plusPY_temp$probs
   
-  #solve MAB decisions via plusMD (not available)
-  #results_plusMD = plusMD_MAB(data, new_samples = new_samples, seed = 0)
+  # Solve MAB decisions via plusMD (not available)
+  # Results_plusMD = plusMD_MAB(data, new_samples = new_samples, seed = 0)
   
-  #solve MAB decisions via HPY
+  # Solve MAB decisions via HPY
   results_HPY_temp = HPY_MAB(data = X, new_samples = new_samples, 
                              seed = 0)
   results_HPY[,replica] = results_HPY_temp$discoveries
   est_prob_new_HPY[[replica]] = results_HPY_temp$probs   
   
-  #solve MAB decisions via HDP
+  # Solve MAB decisions via HDP
   results_HDP_temp = HDP_MAB(data = X, new_samples = new_samples, 
                              seed = 0)
   results_HDP[,replica] = results_HDP_temp$discoveries
   est_prob_new_HDP[[replica]] = results_HDP_temp$probs  
 }
 
-#compute average cumulative discoveries across replica
+# Compute average cumulative discoveries across replica
 results_plusDP_mean = rowMeans( results_plusDP, na.rm = TRUE )
 results_plusPY_mean = rowMeans( results_plusPY, na.rm = TRUE  )
 results_indepDP_mean = rowMeans( results_indepDP, na.rm = TRUE  )
@@ -153,9 +153,9 @@ results_HDP_mean = rowMeans( results_HDP, na.rm = TRUE  )
 results_HPY_mean = rowMeans( results_HPY, na.rm = TRUE  )
 
 ################################################################################
-#plot results 
-#INDEPENDENT MODELS PLOT #######################################################
-# prepare data matrix
+# Plot results 
+# INDEPENDENT MODELS PLOT #######################################################
+# Prepare data matrix
 names = c("Uniform", "Ind DP", "Ind PY", "Oracle")
 num_model_to_compare = length(names)
 model = c()
@@ -181,8 +181,8 @@ ggplot(data_plot, aes(x = time, y = value, color = as.factor(model)) )+
   ) +
   ggtitle("Independent Processes")  # Set plot title
 
-#ADDITIVE MODELS PLOT #######################################################
-# prepare data matrix
+# ADDITIVE MODELS PLOT #######################################################
+# Prepare data matrix
 names = c("Uniform", "+DP", "+PY", "Oracle")
 num_model_to_compare = length(names)
 model = c()
@@ -209,8 +209,8 @@ ggplot(data_plot, aes(x = time, y = value, color = as.factor(model)) )+
   ) +
   ggtitle("Additive processes")  # Set plot title
 
-#HIERARCHICAL MODELS PLOT #######################################################
-# prepare data matrix
+# HIERARCHICAL MODELS PLOT #######################################################
+# Prepare data matrix
 names = c("Uniform", "HDP", "HPY", "Oracle")
 num_model_to_compare = length(names)
 model = c()
@@ -236,7 +236,7 @@ ggplot(data_plot, aes(x = time, y = value, color = as.factor(model)) )+
   ) +
   ggtitle("Hierarchical Processes")  # Set plot title
 
-#average number of species discovered 
+# Average number of species discovered 
 sum(diff(results_plusDP_mean)) / new_samples
 sum(diff(results_plusPY_mean)) / new_samples
 sum(diff(results_indepDP_mean)) / new_samples
@@ -269,7 +269,7 @@ MSE_HPY = MSE_HPY / (new_samples*tot_replica*J); RMSE_HPY = sqrt(MSE_HPY)
 ####################Additional Plots############################################
 
 ################"Plot Empirical Bayes prob of tie across"
-#ptie matrix
+# ptie matrix
 ptie = matrix(NA, nrow = J, ncol = J)
 row = matrix(rep(1:J,J), nrow = J)
 col = t(row)
@@ -284,7 +284,7 @@ for(j in 1:J){
 temp = t(ptie)
 ptie[row>col] = temp[row>col]
 
-#plot prob tie matrix
+# Plot prob tie matrix
 x = paste0("Pop", seq(1,J))
 y = paste0("Pop", seq(1,J))
 data = expand.grid(X=x, Y=y)
