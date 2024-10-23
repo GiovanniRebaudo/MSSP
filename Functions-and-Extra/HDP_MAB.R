@@ -129,7 +129,7 @@ HDP_MAB <- function(data,
           }
           
           indecesPossibleTables = (tablesValues[indecesTablesInRestaurant] ==
-                                     dishAllocation[indexCustomerGlobal])
+                                     currentDish) # dishAllocation[indexCustomerGlobal])
           
           if(sum(indecesPossibleTables)==0){
             # if no tables in the restaurant is serving the observed dish
@@ -138,8 +138,7 @@ HDP_MAB <- function(data,
             # if there are tables in the restaurant serving the observed dish       
             possibleTables = c(indecesTablesInRestaurant[indecesPossibleTables],-1)
             
-            nTablesServingCurrentDish = 
-              sum(tablesValues == dishAllocation[indexCustomerGlobal])
+            nTablesServingCurrentDish = sum(tablesValues == currentDish) #dishAllocation[indexCustomerGlobal])
             
             probs = prob_Table_insample_j(model="HDP")
             
@@ -155,14 +154,14 @@ HDP_MAB <- function(data,
               nPeopleAtTable[newTableAllocation] = 1
               nTablesInRestaurant[indexRestaurant] = 
                 nTablesInRestaurant[indexRestaurant] + 1
-              tablesValues[newTableAllocation] = dishAllocation[indexCustomerGlobal]
+              tablesValues[newTableAllocation] = currentDish #dishAllocation[indexCustomerGlobal]
             } else { # create a new table
               nTablesInRestaurant[indexRestaurant] = 
                 nTablesInRestaurant[indexRestaurant] + 1
               maxTableIndex = maxTableIndex + 1
               newTableAllocation = maxTableIndex
               nPeopleAtTable = c(nPeopleAtTable,1)
-              tablesValues = c(tablesValues,dishAllocation[indexCustomerGlobal])
+              tablesValues = c(tablesValues, currentDish) #dishAllocation[indexCustomerGlobal])
             }
             # assign the table to the restaurant
             tableRestaurantAllocation[newTableAllocation] = indexRestaurant
