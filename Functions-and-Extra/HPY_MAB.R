@@ -160,8 +160,7 @@ HPY_MAB <- function(data,
             # if there are tables in the restaurant serving the observed dish       
             possibleTables = c(indecesTablesInRestaurant[indecesPossibleTables],-1)
             
-            nTablesServingCurrentDish = 
-              sum(tablesValues == currentDish)#dishAllocation[indexCustomerGlobal])
+            nTablesServingCurrentDish = sum(tablesValues == currentDish) #dishAllocation[indexCustomerGlobal])
             
             probs = prob_Table_insample_j(model="HPYP")
             
@@ -175,17 +174,15 @@ HPY_MAB <- function(data,
               freeTables = freeTables[-1]
               nFreeTables = nFreeTables - 1
               nPeopleAtTable[newTableAllocation] = 1
-              nTablesInRestaurant[indexRestaurant] = 
-                nTablesInRestaurant[indexRestaurant] + 1
               tablesValues[newTableAllocation] = currentDish # dishAllocation[indexCustomerGlobal]
             } else { # create a new table
-              nTablesInRestaurant[indexRestaurant] = 
-                nTablesInRestaurant[indexRestaurant] + 1
               maxTableIndex = maxTableIndex + 1
               newTableAllocation = maxTableIndex
               nPeopleAtTable = c(nPeopleAtTable,1)
               tablesValues = c(tablesValues, currentDish) #dishAllocation[indexCustomerGlobal])
             }
+            nTablesInRestaurant[indexRestaurant] = 
+              nTablesInRestaurant[indexRestaurant] + 1
             # assign the table to the restaurant
             tableRestaurantAllocation[newTableAllocation] = indexRestaurant
           } else{ # the sampled table is already occupied in the restaurant --> 
