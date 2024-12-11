@@ -429,7 +429,7 @@ HPY_MAB <- function(data,
         if(iter%%ada_step == 0){
           r_ada                    = r_ada + ada_step
           ada_delta                = min(0.01, 1/sqrt(iter))
-          seq_ada_step             = (r_ada-ada_step):r_ada
+          seq_ada_step             = (r_ada-ada_step+1):r_ada
           
           # (Ada)
           # Update proposal for \sigma_j, j = 0, 1, ..., J
