@@ -133,7 +133,7 @@ HPY_MAB <- function(data,
         
         for (indexCustomerRestaurant in 1:I_j_vec[indexRestaurant]) {
           #indecesTablesInRestaurant = 
-          #  (1:maxTableIndex)[tableRestaurantAllocation==indexRestaurant] #bea
+          #  (1:maxTableIndex)[tableRestaurantAllocation==indexRestaurant]
           currentTable = tableAllocation[indexCustomerGlobal] # get the current table
           currentDish  = dishAllocation[indexCustomerGlobal] # get the current dish
           nPeopleAtTable[currentTable] = nPeopleAtTable[currentTable] - 1
@@ -562,7 +562,7 @@ HPY_MAB <- function(data,
       # Assign obs to the first table in the restaurant serving the dish
       
       currentTable = (1:maxTableIndex)[tablesValues==newDataPoint & 
-                                         tableRestaurantAllocation==newPop][1] #bea
+                                         tableRestaurantAllocation==newPop][1]
       
       tableAllocation           = c(tableAllocation[labels_1toIj], currentTable,
                                     tableAllocation[-labels_1toIj])
