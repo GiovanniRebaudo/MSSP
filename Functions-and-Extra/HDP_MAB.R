@@ -45,7 +45,7 @@ HDP_MAB <- function(data,
     nTables                   = init_all$nTables,
     maxTableIndex             = init_all$maxTableIndex,
     nTablesInRestaurant       = init_all$nTablesInRestaurant,
-    observationDishAllocation = init_all$observationDishAllocation,
+    # observationDishAllocation = init_all$observationDishAllocation,
     nFreeTables               = init_all$nFreeTables,
     freeTables                = init_all$freeTables,
     # Initialized values and quantities named for MCMC: End here
@@ -231,7 +231,7 @@ HDP_MAB <- function(data,
         nTables                   = nTables,
         maxTableIndex             = maxTableIndex,
         nTablesInRestaurant       = nTablesInRestaurant,
-        observationDishAllocation = observationDishAllocation,
+        # observationDishAllocation = observationDishAllocation,
         nFreeTables               = nFreeTables,
         freeTables                = freeTables,
         dishAllocation            = dishAllocation,
@@ -255,7 +255,7 @@ HDP_MAB <- function(data,
     nTables                   = out$nTables,
     maxTableIndex             = out$maxTableIndex,
     nTablesInRestaurant       = out$nTablesInRestaurant,
-    observationDishAllocation = out$observationDishAllocation,
+    # observationDishAllocation = out$observationDishAllocation,
     nFreeTables               = out$nFreeTables,
     freeTables                = out$freeTables,
     dishAllocation            = out$dishAllocation,
@@ -328,10 +328,10 @@ HDP_MAB <- function(data,
                           tableAllocation[-labels_1toIj])
       
       nDishes = length(unique(dishAllocation))
-      observationDishAllocation = integer(nDishes)
-      for(lab_dish in unique(dishAllocation)){
-        observationDishAllocation[lab_dish] = sum(Data_vec==lab_dish)
-      }
+      # observationDishAllocation = integer(nDishes)
+      # for(lab_dish in unique(dishAllocation)){
+      #   observationDishAllocation[lab_dish] = sum(Data_vec==lab_dish)
+      # }
     }
     
     return(
@@ -345,7 +345,7 @@ HDP_MAB <- function(data,
            nTables                   = nTables,
            maxTableIndex             = maxTableIndex,
            nTablesInRestaurant       = nTablesInRestaurant,
-           observationDishAllocation = observationDishAllocation,
+           # observationDishAllocation = observationDishAllocation,
            dishAllocation            = dishAllocation,
            nFreeTables               = nFreeTables,
            freeTables                = freeTables)
@@ -384,10 +384,10 @@ HDP_MAB <- function(data,
     # number of dishes served in the franchise
     dishAllocation            = Data_vec
     
-    observationDishAllocation = integer(nDishes)
-    for(lab_dish in uniDish){
-      observationDishAllocation[lab_dish] = sum(Data_vec==lab_dish)
-    }
+    # observationDishAllocation = integer(nDishes)
+    # for(lab_dish in uniDish){
+    #   observationDishAllocation[lab_dish] = sum(Data_vec==lab_dish)
+    # }
     # how many people are eating a certain dish
     
     if(model =="HDP"){
@@ -525,7 +525,7 @@ HDP_MAB <- function(data,
       # max table index (nTables + nFreeTables = maxTableIndex)
       nTablesInRestaurant       = nTablesInRestaurant,
       # contains only the number of occupied tables in each restaurant
-      observationDishAllocation = observationDishAllocation,
+      # observationDishAllocation = observationDishAllocation,
       # how many people are eating a certain dish
       nFreeTables = nFreeTables,
       # number of free tables
