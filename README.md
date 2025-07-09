@@ -6,6 +6,7 @@ R codes for inference and prediction under multivariate species sampling process
 
 #### Overview 
 This repository is associated with the article [Franzolini, Lijoi, Prünster and Rebaudo (2025) **Multivariate species sampling models.**  arXiv:2503.24004]
+
 The key contribution of the paper is outlined below.
  
 > Species sampling models provide a general framework for random discrete distributions and are tailored for exchangeable data. However, they fall short when used to model heterogeneous data collected from related sources or distinct experimental conditions. To address this limitation, partial exchangeability serves as the ideal probabilistic invariance condition. While numerous models exist for partially exchangeable observations, a unifying framework, similar to species sampling models, is currently absent. In this paper, we introduce multivariate species sampling models, which are a general class of models characterized by their partially exchangeable partition probability function. These models encompass existing nonparametric models for partial exchangeable data, thereby highlighting their core distributional properties and induced learning mechanisms. Our results enable an in-depth comprehension of the induced dependence structure as well as facilitate the development of new models.
