@@ -243,7 +243,7 @@ prob_group_PY <- function(n, nc, alpha, sigma, ntot, log = FALSE){
               lgamma(nc - sigma) +
               lgamma(nc + n - sigma) ) )
   }else{
-    return((lgamma(alpha + ntot) - 
+    return(exp(lgamma(alpha + ntot) - 
               lgamma(alpha + ntot + n) - 
               lgamma(nc - sigma) +
               lgamma(nc + n - sigma) ) ) 
