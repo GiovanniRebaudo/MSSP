@@ -13,7 +13,7 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 source("mSSPmab.R")
 
 #read data
-data_trees = read_excel("conditwebtable.xls")
+data_trees = read_excel("Data-and-Results/conditwebtable.xls")
 
 #associate a numeric unique label to each species
 data_trees = cbind(seq(1:nrow(data_trees)), data_trees)
@@ -303,4 +303,5 @@ mean(results_HPY_real[nrow(results_HPY_real), ] / new_samples)
 #sum(diff(results_indepPY_mean)) / new_samples
 #sum(diff(results_HDP_mean)) / new_samples
 #sum(diff(results_HPY_mean)) / new_samples
+
 
