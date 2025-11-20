@@ -293,7 +293,6 @@ mean(results_plusPY_real[nrow(results_plusPY_real), ] / new_samples)
 mean(results_indepDP_real[nrow(results_indepDP_real), ] / new_samples)
 mean(results_indepPY_real[nrow(results_indepPY_real), ] / new_samples)
 mean(results_random_real[nrow(results_random_real), ] / new_samples)
-mean(results_oracle_real[nrow(results_oracle_real), ] / new_samples)
 mean(results_HDP_real[nrow(results_HDP_real), ] / new_samples)
 mean(results_HPY_real[nrow(results_HPY_real), ] / new_samples)
 #sum(diff(results_plusDP_mean)) / new_samples
@@ -303,5 +302,6 @@ mean(results_HPY_real[nrow(results_HPY_real), ] / new_samples)
 #sum(diff(results_indepPY_mean)) / new_samples
 #sum(diff(results_HDP_mean)) / new_samples
 #sum(diff(results_HPY_mean)) / new_samples
+
 
 
