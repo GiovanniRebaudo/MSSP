@@ -237,14 +237,22 @@ ggplot(data_plot, aes(x = time, y = value, color = as.factor(model)) )+
   ggtitle("Hierarchical Processes")  # Set plot title
 
 # Average number of species discovered 
-sum(diff(results_plusDP_mean)) / new_samples
-sum(diff(results_plusPY_mean)) / new_samples
-sum(diff(results_indepDP_mean)) / new_samples
-sum(diff(results_indepPY_mean)) / new_samples
-sum(diff(results_random_mean)) / new_samples
-sum(diff(results_oracle_mean)) / new_samples
-sum(diff(results_HDP_mean)) / new_samples
-sum(diff(results_HPY_mean)) / new_samples
+mean(results_plusDP[nrow(results_plusDP), ] / new_samples)
+mean(results_plusPY[nrow(results_plusPY), ] / new_samples)
+mean(results_indepDP[nrow(results_indepDP), ] / new_samples)
+mean(results_indepPY[nrow(results_indepPY), ] / new_samples)
+mean(results_random[nrow(results_random), ] / new_samples)
+mean(results_oracle[nrow(results_oracle), ] / new_samples)
+mean(results_HDP[nrow(results_HDP), ] / new_samples)
+mean(results_HPY[nrow(results_HPY), ] / new_samples)
+#sum(diff(results_plusDP_mean)) / new_samples
+#sum(diff(results_plusPY_mean)) / new_samples
+#sum(diff(results_indepDP_mean)) / new_samples
+#sum(diff(results_indepPY_mean)) / new_samples
+#sum(diff(results_random_mean)) / new_samples
+#sum(diff(results_oracle_mean)) / new_samples
+#sum(diff(results_HDP_mean)) / new_samples
+#sum(diff(results_HPY_mean)) / new_samples
 
 #MSE
 
