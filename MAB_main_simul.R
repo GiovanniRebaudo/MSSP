@@ -8,7 +8,7 @@ library(readxl) # version 1.4.3
 #code to set the working directory to the current folder from RStudio
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
-source("Functions-and-Extra/mSSPmab.R")
+source("mSSPmab.R")
 
 ############### true pmf
 J = 8
