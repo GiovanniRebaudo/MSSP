@@ -2,16 +2,16 @@
 #             returns the cumulative number of species discovered
 #             and the matrix of estimated prob of new species
 
-plusPY_MAB<- function(data, a_alpha = 2, b_alpha = 2,
-                      a_alpha0 = 1/4, b_alpha0 = 4,
-                      a_sigma = 1, b_sigma = 2,
-                      a_sigma0 = 1, b_sigma0 = 3,
-                      p = c(0.1, 0.1, 0.8),
-                      init_samples = 30, new_samples = 300, 
-                      burnin = 10, iters = 200, seed = 0, 
-                      niter_MH = 10, ada_step = 5,
-                      ada_thresh = 0.44,
-                      r_ada_input = 0){
+plusPY_MAB<- function(data, a_alpha = 1, b_alpha = 10,
+                            a_alpha0 = 1, b_alpha0 = 20,
+                            a_sigma = 1, b_sigma = 3,
+                            a_sigma0 = .5, b_sigma0 = 20,
+                            p = c(0.02, 0.28, 0.7),
+                            init_samples = 30, new_samples = 300, 
+                            burnin = 10, iters = 200, seed = 0, 
+                            niter_MH = 10, ada_step = 5,
+                            ada_thresh = 0.44,
+                            r_ada_input = 0){
   ## returns the cumulative number of species discovered
   ##inputs: 
   ##  data = observations

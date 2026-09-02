@@ -2,8 +2,9 @@
 #             returns the cumulative number of species discovered
 #             and the matrix of estimated prob of new species
 
-plusDP_MAB<- function(data, a = 6, b = 2,
-                      a0 = 1/2, b0 = 2, p = c(0.15,0.15,0.7),
+plusDP_MAB<- function(data, a = 6, b = 10,
+                            a0 = 1, b0 = 20, 
+                            p = c(0.02, 0.28, 0.7),
                       init_samples = 30, new_samples = 300, 
                       burnin = 10, iters = 200, seed = 0){
   ## returns the cumulative number of species discovered
