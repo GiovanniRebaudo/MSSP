@@ -20,7 +20,10 @@ The repository contains the following:
 1. `MAB_main_simul.R` code to reproduce the synthetic-data analysis results in the article;
 2. `MAB_main_trees.R` code to reproduce the real-data analysis results in the article;
 3. `Functions-and-Extra` functions and code needed to perform the analysis in `MAB_main_simul.R` and `MAB_main_trees.R`;
-4. `Data-and-Results` folder with data and results of the analyses.
+4. `Data-and-Results` folder with the real data;
+5. `plot_aprior_Figure1.R` code to reproduce Figure 1 in the article;
+6. `Illustration_part1.R` code to reproduce Part 1 of the Illustration;
+7. `Illustration_part2.R` code to reproduce Part 2 of the Illustration.
 
 #### Questions or bugs
 For bug reporting purposes, e-mail [Beatrice Franzolini](https://beatricefranzolini.github.io) (franzolini@pm.me) and [Giovanni Rebaudo](https://giovannirebaudo.github.io) (giovanni.rebaudo@unito.it).
