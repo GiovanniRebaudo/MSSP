@@ -26,7 +26,7 @@ The repository contains the following:
 7. `Illustration_part2.R` code to reproduce Part 2 of the Illustration.
 
 #### Questions or bugs
-For bug reporting purposes, e-mail [Beatrice Franzolini](https://beatricefranzolini.github.io) (franzolini@pm.me) and [Giovanni Rebaudo](https://giovannirebaudo.github.io) (giovanni.rebaudo@unito.it).
+For bug reporting purposes, e-mail [Beatrice Franzolini](https://beatricefranzolini.github.io) (beatrice.franzolini@kcl.ac.uk) and [Giovanni Rebaudo](https://giovannirebaudo.github.io) (giovanni.rebaudo@unito.it).
 
 #### Citation
 Please cite the following publication if you use this repository in your research: [Franzolini, Lijoi, Prünster and Rebaudo (2025) **Multivariate species sampling models.**  arXiv:2503.24004]
