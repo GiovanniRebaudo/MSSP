@@ -37,6 +37,7 @@ indepPY_MAB<- function(data, a_alpha = 0.2, b_alpha = 1,
   J = nrow(data) #tot number of populations
   
   species_discovered = rep(0, new_samples) #vector to save the num of discoveries
+  selected_arms = integer(new_samples) #sampling history for simulation RMSE
   prob_new = matrix(NA, nrow = J, ncol = new_samples) #mat to save probs new
   
   X = matrix(NA,nrow = J, 
@@ -172,9 +173,8 @@ indepPY_MAB<- function(data, a_alpha = 0.2, b_alpha = 1,
         sigma[j] = sigma_old
         
         #compute the prediction probabilities
-        if(j == J){
-        prob_new_species[iter_MH,] =  
-          (alpha + sigma*nDishes) / (alpha + I)}
+        prob_new_species[iter_MH, j] =
+          (alpha[j] + sigma[j]*nDishes[j]) / (alpha[j] + I[j])
         Move_alpha_j_out[j, iter_MH] = move_alpha
         Move_sigma_j_out[j, iter_MH] = move_sigma
         
@@ -209,13 +209,14 @@ indepPY_MAB<- function(data, a_alpha = 0.2, b_alpha = 1,
     prob_new[, newobs] = est_prob
     where_vec = which(est_prob == max(est_prob))
     where = ifelse(length(where_vec)>1, sample(where_vec,1), where_vec)
+    selected_arms[newobs] = where
       
     #sample a new observation
     x = data[where, I[where] + 1] 
       
     #check if species is new
     species_discovered[newobs] = !(x %in% X)
-    if(!(x %in% X)){
+    if(!(x %in% X[where, ])){
       nDishes[where] = nDishes[where] + 1
     }
       
@@ -226,5 +227,6 @@ indepPY_MAB<- function(data, a_alpha = 0.2, b_alpha = 1,
     setTxtProgressBar(pb, newobs)
   }#for MAB
   
-  return(list(discoveries = cumsum(species_discovered), probs = t(prob_new)))
+  return(list(discoveries = cumsum(species_discovered), probs = t(prob_new),
+              selected_arms = selected_arms))
 }#function

@@ -5,6 +5,7 @@
 #                 with overlapping support and "similar" p.m.f.
 #sample_from_pop: returns a sample with replacement from one pop given pmfs
 #sample_from_pop_all: returns J samples with replacement from J pop given pmfs
+#true_discovery_probs: true unseen mass along a strategy's sampling history
 #sample_alpha_DP: returns a sample of the concentration parameter of a DP
 #                 from its full conditional in a marginal sampler 
 #prob_new_group_DP: ratio between EPPF of DP corresponding to a group 
@@ -116,6 +117,26 @@ sample_from_pop_all <- function(truth, size = NULL, seed = 0, verbose = TRUE){
   return(X) 
 }
 
+
+true_discovery_probs <- function(data, pmfs, init_samples, selected_arms){
+  # Species labels index the pmf entries, as in sample_from_pop_all.
+  # Use the original data labels, not the hierarchical samplers' relabelling.
+  J = nrow(data)
+  stopifnot(length(pmfs) == J, all(selected_arms %in% seq_len(J)))
+  pmfs = lapply(pmfs, function(p) p / sum(p))
+  seen = unique(as.vector(data[, seq_len(init_samples), drop = FALSE]))
+  I = rep(init_samples, J)
+  prob_new = matrix(NA_real_, nrow = length(selected_arms), ncol = J)
+  for(t in seq_along(selected_arms)){
+    # Each prediction is evaluated BEFORE the next observation is added.
+    prob_new[t, ] = vapply(pmfs, function(p)
+      sum(p[!(seq_along(p) %in% seen)]), numeric(1))
+    j = selected_arms[t]
+    I[j] = I[j] + 1
+    seen = union(seen, data[j, I[j]])
+  }
+  return(prob_new)
+}
 
 sample_alpha_DP <- function(alpha, K, n, a = 1, b = 1){
   ## sample concentration parameter of a DP from its full conditional 

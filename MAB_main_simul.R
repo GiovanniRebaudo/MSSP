@@ -82,6 +82,7 @@ est_prob_new_indepPY = vector("list", tot_replica)
 est_prob_new_oracle = vector("list", tot_replica)
 est_prob_new_HDP = vector("list", tot_replica)
 est_prob_new_HPY = vector("list", tot_replica)
+true_prob_new = vector("list", tot_replica)
 ############### Gibbs samplers
 replica = 0
 for(seed in seed_replicas){
@@ -95,34 +96,36 @@ for(seed in seed_replicas){
                           seed = seed, verbose = FALSE)
   # Solve MAB decision via uniform
   results_random_temp = uniform_MAB(data = X, new_samples = new_samples, 
-                                    seed = 0)
+                                    init_samples = init_samples, seed = 0)
   results_random[,replica] = results_random_temp$discoveries
   
   # Solve MAB decision via oracle
-  results_oracle_temp = oracle_MAB(data = X, pmfs = pmfs, new_samples = new_samples)
+  results_oracle_temp = oracle_MAB(data = X, pmfs = pmfs, new_samples = new_samples,
+                                  init_samples = init_samples)
   results_oracle[,replica] = results_oracle_temp$discoveries
   est_prob_new_oracle[[replica]] = results_oracle_temp$probs
   
   # Solve MAB decisions via indepDP
   results_indepDP_temp = indepDP_MAB(data = X, new_samples = new_samples, 
-                                     seed = 0)
+                                     init_samples = init_samples, seed = 0)
   results_indepDP[,replica] = results_indepDP_temp$discoveries
   est_prob_new_indepDP[[replica]] = results_indepDP_temp$probs
   
   # Solve MAB decisions via indepPY 
-  results_indepPY_temp = indepPY_MAB(data = X, new_samples = new_samples, seed = 0)
+  results_indepPY_temp = indepPY_MAB(data = X, new_samples = new_samples,
+                                     init_samples = init_samples, seed = 0)
   results_indepPY[,replica] = results_indepPY_temp$discoveries
   est_prob_new_indepPY[[replica]] = results_indepPY_temp$probs
   
   # Solve MAB decisions via plusDP
   results_plusDP_temp = plusDP_MAB(data = X, new_samples = new_samples, 
-                                   seed = 0)
+                                   init_samples = init_samples, seed = 0)
   results_plusDP[,replica] = results_plusDP_temp$discoveries
   est_prob_new_plusDP[[replica]] = results_plusDP_temp$probs
   
   # Solve MAB decisions via plusPY
   results_plusPY_temp = plusPY_MAB(data = X, new_samples = new_samples, 
-                                   seed = 0)
+                                   init_samples = init_samples, seed = 0)
   results_plusPY[,replica] = results_plusPY_temp$discoveries
   est_prob_new_plusPY[[replica]] = results_plusPY_temp$probs
   
@@ -131,15 +134,25 @@ for(seed in seed_replicas){
   
   # Solve MAB decisions via HPY
   results_HPY_temp = HPY_MAB(data = X, new_samples = new_samples, 
-                             seed = 0)
+                             init_samples = init_samples, seed = 0)
   results_HPY[,replica] = results_HPY_temp$discoveries
   est_prob_new_HPY[[replica]] = results_HPY_temp$probs   
   
   # Solve MAB decisions via HDP
   results_HDP_temp = HDP_MAB(data = X, new_samples = new_samples, 
-                             seed = 0)
+                             init_samples = init_samples, seed = 0)
   results_HDP[,replica] = results_HDP_temp$discoveries
   est_prob_new_HDP[[replica]] = results_HDP_temp$probs  
+
+  # True discovery probabilities along each strategy's OWN sampling history.
+  selected_arms = list(indepDP = results_indepDP_temp$selected_arms,
+                       indepPY = results_indepPY_temp$selected_arms,
+                       plusDP = results_plusDP_temp$selected_arms,
+                       plusPY = results_plusPY_temp$selected_arms,
+                       HDP = results_HDP_temp$selected_arms,
+                       HPY = results_HPY_temp$selected_arms)
+  true_prob_new[[replica]] = lapply(selected_arms, function(arms)
+    true_discovery_probs(X, pmfs, init_samples, arms))
 }
 
 # Compute average cumulative discoveries across replica
@@ -254,18 +267,18 @@ mean(results_HPY[nrow(results_HPY), ] / new_samples)
 #sum(diff(results_HDP_mean)) / new_samples
 #sum(diff(results_HPY_mean)) / new_samples
 
-#MSE
+#MSE relative to the true unseen mass on each strategy's own trajectory
 
 MSE_DP = 0; MSE_PY = 0;
 MSE_plusDP = 0; MSE_plusPY = 0;
 MSE_HDP = 0; MSE_HPY = 0;
 for (replica in 1:tot_replica){
-  MSE_DP = MSE_DP + sum((est_prob_new_indepDP[[replica]] - est_prob_new_oracle[[replica]])**2)
-  MSE_PY = MSE_PY + sum((est_prob_new_indepPY[[replica]] - est_prob_new_oracle[[replica]])**2)
-  MSE_plusDP = MSE_plusDP + sum((est_prob_new_plusDP[[replica]] - est_prob_new_oracle[[replica]])**2)
-  MSE_plusPY = MSE_plusPY + sum((est_prob_new_plusPY[[replica]] - est_prob_new_oracle[[replica]])**2)
-  MSE_HDP = MSE_HDP + sum((est_prob_new_HDP[[replica]] - est_prob_new_oracle[[replica]])**2)
-  MSE_HPY = MSE_HPY + sum((est_prob_new_HPY[[replica]] - est_prob_new_oracle[[replica]])**2)
+  MSE_DP = MSE_DP + sum((est_prob_new_indepDP[[replica]] - true_prob_new[[replica]]$indepDP)**2)
+  MSE_PY = MSE_PY + sum((est_prob_new_indepPY[[replica]] - true_prob_new[[replica]]$indepPY)**2)
+  MSE_plusDP = MSE_plusDP + sum((est_prob_new_plusDP[[replica]] - true_prob_new[[replica]]$plusDP)**2)
+  MSE_plusPY = MSE_plusPY + sum((est_prob_new_plusPY[[replica]] - true_prob_new[[replica]]$plusPY)**2)
+  MSE_HDP = MSE_HDP + sum((est_prob_new_HDP[[replica]] - true_prob_new[[replica]]$HDP)**2)
+  MSE_HPY = MSE_HPY + sum((est_prob_new_HPY[[replica]] - true_prob_new[[replica]]$HPY)**2)
 }
 MSE_DP = MSE_DP / (new_samples*tot_replica*J); RMSE_DP = sqrt(MSE_DP)
 MSE_PY = MSE_PY / (new_samples*tot_replica*J); RMSE_PY = sqrt(MSE_PY)

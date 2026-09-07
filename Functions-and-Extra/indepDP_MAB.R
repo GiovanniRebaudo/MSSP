@@ -33,6 +33,7 @@ indepDP_MAB<- function(data, a = 0.75, b = 1,
   J = nrow(data) #tot number of populations
   
   species_discovered = rep(0, new_samples) #vector to save the num of discoveries
+  selected_arms = integer(new_samples) #sampling history for simulation RMSE
   prob_new = matrix(NA, nrow = J, ncol = new_samples) #mat to save probs new
   
   tot_iter = burnin + iters #per each MCMC
@@ -75,6 +76,7 @@ indepDP_MAB<- function(data, a = 0.75, b = 1,
     prob_new[, newobs] = est_prob
     where_vec = which(est_prob == max(est_prob))
     where = ifelse(length(where_vec)>1, sample(where_vec,1), where_vec)
+    selected_arms[newobs] = where
     #print(est_prob)
     
     #sample a new observation
@@ -82,7 +84,7 @@ indepDP_MAB<- function(data, a = 0.75, b = 1,
     
     #check if species is new
     species_discovered[newobs] = !(x %in% X)
-    if(!(x %in% X)){
+    if(!(x %in% X[where, ])){
       K[where] = K[where]+1
     }
     #print(c(where,species_discovered[newobs]))
@@ -93,5 +95,6 @@ indepDP_MAB<- function(data, a = 0.75, b = 1,
     setTxtProgressBar(pb, newobs)
   }#for MAB
   
-  return(list(discoveries = cumsum(species_discovered), probs = t(prob_new)))
+  return(list(discoveries = cumsum(species_discovered), probs = t(prob_new),
+              selected_arms = selected_arms))
 }#function

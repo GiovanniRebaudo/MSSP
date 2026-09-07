@@ -45,6 +45,7 @@ plusPY_MAB<- function(data, a_alpha = 1, b_alpha = 10,
   J = nrow(data) #tot number of populations
   
   species_discovered = rep(0, new_samples) #vector to save the num of discoveries
+  selected_arms = integer(new_samples) #sampling history for simulation RMSE
   prob_new = matrix(NA, nrow = J, ncol = new_samples) #mat to save probs new
   
   tot_iter = burnin + iters #per each MCMC
@@ -436,6 +437,7 @@ plusPY_MAB<- function(data, a_alpha = 1, b_alpha = 10,
     
     where_vec = which(est_prob == max(est_prob))
     where = ifelse(length(where_vec)>1, sample(where_vec,1), where_vec)
+    selected_arms[newobs] = where
 
     #sample a new observation
     x = data[where, I[where] + 1] 
@@ -467,5 +469,6 @@ plusPY_MAB<- function(data, a_alpha = 1, b_alpha = 10,
     setTxtProgressBar(pb, newobs)
   }#for MAB
   
-  return(list(discoveries = cumsum(species_discovered), probs = t(prob_new)))
+  return(list(discoveries = cumsum(species_discovered), probs = t(prob_new),
+              selected_arms = selected_arms))
 }#function

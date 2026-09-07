@@ -36,6 +36,7 @@ plusDP_MAB<- function(data, a = 6, b = 10,
   J = nrow(data) #tot number of populations
   
   species_discovered = rep(0, new_samples) #vector to save the num of discoveries
+  selected_arms = integer(new_samples) #sampling history for simulation RMSE
   prob_new = matrix(NA, nrow = J, ncol = new_samples) #mat to save probs new
   
   tot_iter = burnin + iters #per each MCMC
@@ -162,6 +163,7 @@ plusDP_MAB<- function(data, a = 6, b = 10,
     prob_new[, newobs] = est_prob
     where_vec = which(est_prob == max(est_prob))
     where = ifelse(length(where_vec)>1, sample(where_vec,1), where_vec)
+    selected_arms[newobs] = where
     #print(est_prob)
     
     #sample a new observation
@@ -193,5 +195,6 @@ plusDP_MAB<- function(data, a = 6, b = 10,
     setTxtProgressBar(pb, newobs)
   }#for MAB
   
-  return(list(discoveries = cumsum(species_discovered), probs = t(prob_new)))
+  return(list(discoveries = cumsum(species_discovered), probs = t(prob_new),
+              selected_arms = selected_arms))
 }#function

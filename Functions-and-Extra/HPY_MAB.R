@@ -845,6 +845,7 @@ HPY_MAB <- function(data,
   tot_iter = burnin + iters #per each MCMC
   
   species_discovered = rep(0, new_samples) 
+  selected_arms = integer(new_samples) #sampling history for simulation RMSE
   #vector to save the num of discoveries
   prob_new_out = matrix(0, nrow = new_samples, ncol = J)
   # vector for prob of new species for each mcmc iteration
@@ -955,6 +956,7 @@ HPY_MAB <- function(data,
     # Choose optimal arm
     where_vec = which(est_prob == max(est_prob))
     newj = ifelse(length(where_vec)>1, sample(where_vec,1), where_vec)
+    selected_arms[iter_new] = newj
     
     # Pick new obs
     newObs = data[newj, out$I_j_vec[newj]+1]
@@ -1004,5 +1006,6 @@ HPY_MAB <- function(data,
     setTxtProgressBar(pb, iter_new)
   }#for MAB
   
-  return(list(discoveries = cumsum(species_discovered), probs = prob_new_out))
+  return(list(discoveries = cumsum(species_discovered), probs = prob_new_out,
+              selected_arms = selected_arms))
 }
