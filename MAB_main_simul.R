@@ -64,6 +64,7 @@ new_samples = 300
 ############### How many replicas?
 seed_replicas = seq(1,20)
 tot_replica = length(seed_replicas)
+n_workers = 4L # Set to 1L for the same calculation run sequentially.
 
 ############### Initialize matrices and list to save for more replicas
 results_plusDP = matrix(NA, nrow = new_samples, ncol = tot_replica) 
@@ -84,12 +85,8 @@ est_prob_new_HDP = vector("list", tot_replica)
 est_prob_new_HPY = vector("list", tot_replica)
 true_prob_new = vector("list", tot_replica)
 ############### Gibbs samplers
-replica = 0
-for(seed in seed_replicas){
-  
-  replica = replica + 1
-  
-  cat("\nReplica", replica, "out of", tot_replica, "\n")
+run_simulation_replica = function(seed, pmfs, init_samples, new_samples){
+  cat("\nReplica with seed", seed, "\n")
   
   ############### Sample observations for fair comparison of methods
   X = sample_from_pop_all(truth = pmfs, size = init_samples + new_samples,
@@ -97,37 +94,26 @@ for(seed in seed_replicas){
   # Solve MAB decision via uniform
   results_random_temp = uniform_MAB(data = X, new_samples = new_samples, 
                                     init_samples = init_samples, seed = 0)
-  results_random[,replica] = results_random_temp$discoveries
   
   # Solve MAB decision via oracle
   results_oracle_temp = oracle_MAB(data = X, pmfs = pmfs, new_samples = new_samples,
                                   init_samples = init_samples)
-  results_oracle[,replica] = results_oracle_temp$discoveries
-  est_prob_new_oracle[[replica]] = results_oracle_temp$probs
   
   # Solve MAB decisions via indepDP
   results_indepDP_temp = indepDP_MAB(data = X, new_samples = new_samples, 
                                      init_samples = init_samples, seed = 0)
-  results_indepDP[,replica] = results_indepDP_temp$discoveries
-  est_prob_new_indepDP[[replica]] = results_indepDP_temp$probs
   
   # Solve MAB decisions via indepPY 
   results_indepPY_temp = indepPY_MAB(data = X, new_samples = new_samples,
                                      init_samples = init_samples, seed = 0)
-  results_indepPY[,replica] = results_indepPY_temp$discoveries
-  est_prob_new_indepPY[[replica]] = results_indepPY_temp$probs
   
   # Solve MAB decisions via plusDP
   results_plusDP_temp = plusDP_MAB(data = X, new_samples = new_samples, 
                                    init_samples = init_samples, seed = 0)
-  results_plusDP[,replica] = results_plusDP_temp$discoveries
-  est_prob_new_plusDP[[replica]] = results_plusDP_temp$probs
   
   # Solve MAB decisions via plusPY
   results_plusPY_temp = plusPY_MAB(data = X, new_samples = new_samples, 
                                    init_samples = init_samples, seed = 0)
-  results_plusPY[,replica] = results_plusPY_temp$discoveries
-  est_prob_new_plusPY[[replica]] = results_plusPY_temp$probs
   
   # Solve MAB decisions via plusMD (not available)
   # Results_plusMD = plusMD_MAB(data, new_samples = new_samples, seed = 0)
@@ -135,14 +121,10 @@ for(seed in seed_replicas){
   # Solve MAB decisions via HPY
   results_HPY_temp = HPY_MAB(data = X, new_samples = new_samples, 
                              init_samples = init_samples, seed = 0)
-  results_HPY[,replica] = results_HPY_temp$discoveries
-  est_prob_new_HPY[[replica]] = results_HPY_temp$probs   
   
   # Solve MAB decisions via HDP
   results_HDP_temp = HDP_MAB(data = X, new_samples = new_samples, 
                              init_samples = init_samples, seed = 0)
-  results_HDP[,replica] = results_HDP_temp$discoveries
-  est_prob_new_HDP[[replica]] = results_HDP_temp$probs  
 
   # True discovery probabilities along each strategy's OWN sampling history.
   selected_arms = list(indepDP = results_indepDP_temp$selected_arms,
@@ -151,8 +133,37 @@ for(seed in seed_replicas){
                        plusPY = results_plusPY_temp$selected_arms,
                        HDP = results_HDP_temp$selected_arms,
                        HPY = results_HPY_temp$selected_arms)
-  true_prob_new[[replica]] = lapply(selected_arms, function(arms)
+  true_prob_new = lapply(selected_arms, function(arms)
     true_discovery_probs(X, pmfs, init_samples, arms))
+  list(random = results_random_temp, oracle = results_oracle_temp,
+       indepDP = results_indepDP_temp, indepPY = results_indepPY_temp,
+       plusDP = results_plusDP_temp, plusPY = results_plusPY_temp,
+       HPY = results_HPY_temp, HDP = results_HDP_temp,
+       true_prob_new = true_prob_new)
+}
+
+replica_results = run_mab_replicas(seed_replicas, run_simulation_replica,
+                                  pmfs = pmfs, init_samples = init_samples,
+                                  new_samples = new_samples, workers = n_workers)
+# Collect in the original replica order; leave all subsequent summaries unchanged.
+for(replica in seq_len(tot_replica)){
+  result = replica_results[[replica]]
+  results_random[,replica] = result$random$discoveries
+  results_oracle[,replica] = result$oracle$discoveries
+  est_prob_new_oracle[[replica]] = result$oracle$probs
+  results_indepDP[,replica] = result$indepDP$discoveries
+  est_prob_new_indepDP[[replica]] = result$indepDP$probs
+  results_indepPY[,replica] = result$indepPY$discoveries
+  est_prob_new_indepPY[[replica]] = result$indepPY$probs
+  results_plusDP[,replica] = result$plusDP$discoveries
+  est_prob_new_plusDP[[replica]] = result$plusDP$probs
+  results_plusPY[,replica] = result$plusPY$discoveries
+  est_prob_new_plusPY[[replica]] = result$plusPY$probs
+  results_HPY[,replica] = result$HPY$discoveries
+  est_prob_new_HPY[[replica]] = result$HPY$probs
+  results_HDP[,replica] = result$HDP$discoveries
+  est_prob_new_HDP[[replica]] = result$HDP$probs
+  true_prob_new[[replica]] = result$true_prob_new
 }
 
 # Compute average cumulative discoveries across replica
@@ -319,4 +330,3 @@ ggplot(data, aes(X, Y, fill= ptie)) +
   theme(axis.title.x=element_blank(),
         axis.title.y=element_blank()) + 
   guides(fill=guide_legend(title="Prob. tie"))
-

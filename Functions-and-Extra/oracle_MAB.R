@@ -30,10 +30,9 @@ oracle_MAB<- function(data, pmfs,
                        char = "=")   # Character used to create the bar
   
   
+  J = nrow(data) #tot number of populations
   species_discovered = rep(0, new_samples) #vector to save the num of discoveries
   prob_new = matrix(NA, nrow = J, ncol = new_samples) #mat to save probs new
-  
-  J = nrow(data) #tot number of populations
   
   X = matrix(NA,nrow = J, 
              ncol = init_samples + new_samples) #matrix of observations X[j,i]is X_{j,i}

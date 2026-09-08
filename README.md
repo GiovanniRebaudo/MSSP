@@ -4,11 +4,12 @@ R codes for inference and prediction under multivariate species sampling process
 
 **Authors**: [Beatrice Franzolini](https://beatricefranzolini.github.io) and [Giovanni Rebaudo](https://giovannirebaudo.github.io)
 
-#### Overview 
+#### Overview
+
 This repository is associated with the article [Franzolini, Lijoi, Prünster and Rebaudo (2025) **Multivariate species sampling models.**  arXiv:2503.24004]
 
 The key contribution of the paper is outlined below.
- 
+
 > Species sampling models provide a general framework for random discrete distributions and are tailored for exchangeable data. However, they fall short when used to model heterogeneous data collected from related sources or distinct experimental conditions. To address this limitation, partial exchangeability serves as the ideal probabilistic invariance condition. While numerous models exist for partially exchangeable observations, a unifying framework, similar to species sampling models, is currently absent. In this paper, we introduce multivariate species sampling models, which are a general class of models characterized by their partially exchangeable partition probability function. These models encompass existing nonparametric models for partial exchangeable data, thereby highlighting their core distributional properties and induced learning mechanisms. Our results enable an in-depth comprehension of the induced dependence structure as well as facilitate the development of new models.
 
 This repository provides codes to replicate the results in Franzolini, Lijoi, Prünster and Rebaudo (2025) **Multivariate species sampling models.**  arXiv:2503.24004.**
@@ -25,12 +26,14 @@ The repository contains the following:
 6. `Illustration_part1.R` code to reproduce Part 1 of the Illustration;
 7. `Illustration_part2.R` code to reproduce Part 2 of the Illustration.
 
+#### Parallel MAB runs
+
+Both MAB main scripts use four parallel R processes by default (`n_workers = 4L`). Set `n_workers = 1L` in the script to run sequentially. Replicas retain their original seeds and within-replica call order; aggregation remains in replica order. Parallel execution uses the bundled R package `parallel` and does not change the number of MCMC iterations or the burn-in.
+
 #### Questions or bugs
+
 For bug reporting purposes, e-mail [Beatrice Franzolini](https://beatricefranzolini.github.io) (beatrice.franzolini@kcl.ac.uk) and [Giovanni Rebaudo](https://giovannirebaudo.github.io) (giovanni.rebaudo@unito.it).
 
 #### Citation
-Please cite the following publication if you use this repository in your research: [Franzolini, Lijoi, Prünster and Rebaudo (2025) **Multivariate species sampling models.**  arXiv:2503.24004]
 
-
-
-
+Please cite the following publication if you use this repository in your research:[Franzolini, Lijoi, Prünster and Rebaudo (2025) **Multivariate species sampling models.**  arXiv:2503.24004]

@@ -116,6 +116,7 @@ new_samples = 300
 
 ###############how many replicas?
 tot_replica = 20
+n_workers = 4L # Set to 1L for the same calculation run sequentially.
 
 ###############initialize for more replicas
 results_plusDP_real = matrix(NA, nrow = new_samples, ncol = tot_replica) 
@@ -136,15 +137,13 @@ est_prob_new_indepPY_real = vector("list", tot_replica)
 est_prob_new_oracle_real = vector("list", tot_replica)
 
 ###############gibbs samplers
-replica = 0
-for(seed in 1:tot_replica){
-  
-  replica = replica + 1
-  
-  cat("\nReplica", replica, "out of", tot_replica, "\n")
+run_trees_replica = function(seed, sample1, sample2, sample3, sample4,
+                              init_samples, new_samples){
+  cat("\nReplica with seed", seed, "\n")
   
   ###############sample observations for fair comparison of methods
   set.seed(seed)
+  J = 4
   X = matrix(NA, nrow = J, ncol = init_samples+new_samples)
   X[1,] = sample(sample1, init_samples+new_samples, replace = FALSE)
   X[2,] = sample(sample2, init_samples+new_samples, replace = FALSE)
@@ -152,48 +151,61 @@ for(seed in 1:tot_replica){
   X[4,] = sample(sample4, init_samples+new_samples, replace = FALSE)
   
   #solve MAB decisions via plusDP
-  results_plusDP_temp = plusDP_MAB(data = X, new_samples = new_samples, 
-                                   seed = 0)
-  results_plusDP_real[,replica] = results_plusDP_temp$discoveries
-  est_prob_new_plusDP_real[[replica]] = results_plusDP_temp$probs
+  results_plusDP_temp = plusDP_MAB(data = X, new_samples = new_samples,
+                                   init_samples = init_samples, seed = 0)
   
   #solve MAB decisions via plusPY
-  results_plusPY_temp = plusPY_MAB(data = X, new_samples = new_samples, 
-                                   seed = 0)
-  results_plusPY_real[,replica] = results_plusPY_temp$discoveries
-  est_prob_new_plusPY_real[[replica]] = results_plusPY_temp$probs
+  results_plusPY_temp = plusPY_MAB(data = X, new_samples = new_samples,
+                                   init_samples = init_samples, seed = 0)
   
   #solve MAB decisions via indepDP
-  results_indepDP_temp = indepDP_MAB(data = X, new_samples = new_samples, 
-                                     seed = 0)
-  results_indepDP_real[,replica] = results_indepDP_temp$discoveries
-  est_prob_new_indepDP_real[[replica]] = results_indepDP_temp$probs
+  results_indepDP_temp = indepDP_MAB(data = X, new_samples = new_samples,
+                                     init_samples = init_samples, seed = 0)
   
   #solve MAB decisions via indepPY 
-  results_indepPY_temp = indepPY_MAB(data = X, new_samples = new_samples, 
-                                     seed = 0)
-  results_indepPY_real[,replica] = results_indepPY_temp$discoveries
-  est_prob_new_indepPY_real[[replica]] = results_indepPY_temp$probs
+  results_indepPY_temp = indepPY_MAB(data = X, new_samples = new_samples,
+                                     init_samples = init_samples, seed = 0)
   
   #solve MAB decisions via plusMD (not available)
   #results_plusMD = plusMD_MAB(data, new_samples = new_samples, seed = 0)
   
   #solve MAB decision via uniform
-  results_random_temp = uniform_MAB(data = X, new_samples = new_samples, 
-                                    seed = 0)
-  results_random_real[,replica] = results_random_temp$discoveries
+  results_random_temp = uniform_MAB(data = X, new_samples = new_samples,
+                                    init_samples = init_samples, seed = 0)
   
   #solve MAB decisions via HPY
-  results_HPY_temp = HPY_MAB(data = X, new_samples = new_samples, 
-                             seed = 0)
-  results_HPY_real[,replica] = results_HPY_temp$discoveries
-  est_prob_new_HPY_real[[replica]] = results_HPY_temp$probs   #t(prob)
+  results_HPY_temp = HPY_MAB(data = X, new_samples = new_samples,
+                             init_samples = init_samples, seed = 0)
   
   #solve MAB decisions via HDP
-  results_HDP_temp = HDP_MAB(data = X, new_samples = new_samples, 
-                             seed = 0)
-  results_HDP_real[,replica] = results_HDP_temp$discoveries
-  est_prob_new_HDP_real[[replica]] = results_HDP_temp$probs  #t(prob)
+  results_HDP_temp = HDP_MAB(data = X, new_samples = new_samples,
+                             init_samples = init_samples, seed = 0)
+  list(plusDP = results_plusDP_temp, plusPY = results_plusPY_temp,
+       indepDP = results_indepDP_temp, indepPY = results_indepPY_temp,
+       random = results_random_temp, HPY = results_HPY_temp, HDP = results_HDP_temp)
+}
+
+replica_results = run_mab_replicas(seq_len(tot_replica), run_trees_replica,
+                                  sample1 = sample1, sample2 = sample2,
+                                  sample3 = sample3, sample4 = sample4,
+                                  init_samples = init_samples,
+                                  new_samples = new_samples, workers = n_workers)
+# Collect in the original replica order; leave all subsequent summaries unchanged.
+for(replica in seq_len(tot_replica)){
+  result = replica_results[[replica]]
+  results_plusDP_real[,replica] = result$plusDP$discoveries
+  est_prob_new_plusDP_real[[replica]] = result$plusDP$probs
+  results_plusPY_real[,replica] = result$plusPY$discoveries
+  est_prob_new_plusPY_real[[replica]] = result$plusPY$probs
+  results_indepDP_real[,replica] = result$indepDP$discoveries
+  est_prob_new_indepDP_real[[replica]] = result$indepDP$probs
+  results_indepPY_real[,replica] = result$indepPY$discoveries
+  est_prob_new_indepPY_real[[replica]] = result$indepPY$probs
+  results_random_real[,replica] = result$random$discoveries
+  results_HPY_real[,replica] = result$HPY$discoveries
+  est_prob_new_HPY_real[[replica]] = result$HPY$probs
+  results_HDP_real[,replica] = result$HDP$discoveries
+  est_prob_new_HDP_real[[replica]] = result$HDP$probs
 }
 
 results_plusDP_mean = rowMeans( results_plusDP_real, na.rm = TRUE )

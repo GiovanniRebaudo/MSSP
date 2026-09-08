@@ -315,6 +315,8 @@ HPY_MAB <- function(data,
           
           for (indexRestaurant in 1:nRest) {
             # Update parameters \theta_j, j = 1, ..., J
+            ell_j = nTablesInRestaurant[indexRestaurant]
+            if(ell_j>1) vec_1_to_ell_j_1 = 1:(ell_j-1)
             sigma_old      = sigma_vec[indexRestaurant]
             theta_old      = theta_vec[indexRestaurant]
             log_theta_old  = log(theta_old)
@@ -332,9 +334,7 @@ HPY_MAB <- function(data,
               
               # Quantities useful in the log Likelihood part (PYP log EPPF)
               I_j              = I_j_vec[indexRestaurant]
-              ell_j            = nTablesInRestaurant[indexRestaurant]
               if(ell_j>1){
-                vec_1_to_ell_j_1 = 1:(ell_j-1)
                 
                 # Likelihood part (PYP log EPPF)
                 Acc_prob_theta = Acc_prob_theta +
