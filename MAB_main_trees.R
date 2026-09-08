@@ -309,7 +309,7 @@ mean(results_HDP_real[nrow(results_HDP_real), ] / new_samples)
 mean(results_HPY_real[nrow(results_HPY_real), ] / new_samples)
 
 # Temp
-save.image(file = "/Users/rebaudogiovanni/Library/CloudStorage/Dropbox-CCA/giovanni rebaudo/GitHub/MSSP/Data-and-Results/MAB_trees.RData")
+save.image(file = "Data-and-Results/MAB_trees.RData")
 
 
 

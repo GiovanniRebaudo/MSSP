@@ -329,4 +329,4 @@ c(
   HDP = RMSE_HDP,
   HPY = RMSE_HPY
 )
-save.image(file = "/Users/rebaudogiovanni/Library/CloudStorage/Dropbox-CCA/giovanni rebaudo/GitHub/MSSP/Data-and-Results/MAB_simul.RData")
+save.image(file = "Data-and-Results/MAB_simul.RData")
