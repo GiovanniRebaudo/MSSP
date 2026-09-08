@@ -329,4 +329,19 @@ c(
   HDP = RMSE_HDP,
   HPY = RMSE_HPY
 )
-save.image(file = "Data-and-Results/MAB_simul.RData")
+# save.image(file = "Data-and-Results/MAB_simul.RData")
+
+mab_dir <- getwd()
+
+source(file.path(mab_dir, "Functions-and-Extra/save_mab_plots.R"))
+
+mab_sim <- new.env()
+load(file.path(mab_dir, "Data-and-Results/MAB_simul.RData"),
+     envir = mab_sim)
+
+save_mab_plots(
+  "simul",
+  output_dir = file.path(mab_dir, "Data-and-Results/MAB-plots-20260908"),
+  width = 6, height = 6,
+  envir = mab_sim
+)

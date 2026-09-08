@@ -1,4 +1,4 @@
-# Export the three existing MAB comparison panels, without running any sampler.
+# Export the three existing MAB comparison panels, without (re)running any sampler.
 
 mab_result_plots <- function(experiment = c("simul", "trees"), envir = parent.frame()){
   experiment = match.arg(experiment)
