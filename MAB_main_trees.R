@@ -309,7 +309,21 @@ mean(results_HDP_real[nrow(results_HDP_real), ] / new_samples)
 mean(results_HPY_real[nrow(results_HPY_real), ] / new_samples)
 
 # Temp
-save.image(file = "Data-and-Results/MAB_trees.RData")
+# save.image(file = "Data-and-Results/MAB_trees.RData")
 
+mab_dir <- getwd()
+
+source(file.path(mab_dir, "Functions-and-Extra/save_mab_plots.R"))
+
+mab_sim <- new.env()
+load(file.path(mab_dir, "Data-and-Results/MAB_trees.RData"),
+     envir = mab_sim)
+
+save_mab_plots(
+  "tree",
+  output_dir = file.path(mab_dir, "Data-and-Results/MAB-plots-20260908"),
+  width = 6, height = 6,
+  envir = mab_sim
+)
 
 
