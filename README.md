@@ -30,6 +30,8 @@ The repository contains the following:
 
 Both MAB main scripts use four parallel R processes by default (`n_workers = 4L`). Set `n_workers = 1L` in the script to run sequentially. Replicas retain their original seeds and within-replica call order; aggregation remains in replica order. Parallel execution uses the bundled R package `parallel` and does not change the number of MCMC iterations or the burn-in.
 
+The console reports each replica's start and completion, its seed, and the total number completed. Set `progress = FALSE` in the `run_mab_replicas` call to hide these messages.
+
 #### Questions or bugs
 
 For bug reporting purposes, e-mail [Beatrice Franzolini](https://beatricefranzolini.github.io) (beatrice.franzolini@kcl.ac.uk) and [Giovanni Rebaudo](https://giovannirebaudo.github.io) (giovanni.rebaudo@unito.it).

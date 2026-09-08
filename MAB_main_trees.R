@@ -139,7 +139,6 @@ est_prob_new_oracle_real = vector("list", tot_replica)
 ###############gibbs samplers
 run_trees_replica = function(seed, sample1, sample2, sample3, sample4,
                               init_samples, new_samples){
-  cat("\nReplica with seed", seed, "\n")
   
   ###############sample observations for fair comparison of methods
   set.seed(seed)
@@ -189,7 +188,8 @@ replica_results = run_mab_replicas(seq_len(tot_replica), run_trees_replica,
                                   sample1 = sample1, sample2 = sample2,
                                   sample3 = sample3, sample4 = sample4,
                                   init_samples = init_samples,
-                                  new_samples = new_samples, workers = n_workers)
+                                  new_samples = new_samples, workers = n_workers,
+                                  progress = TRUE)
 # Collect in the original replica order; leave all subsequent summaries unchanged.
 for(replica in seq_len(tot_replica)){
   result = replica_results[[replica]]
@@ -307,13 +307,9 @@ mean(results_indepPY_real[nrow(results_indepPY_real), ] / new_samples)
 mean(results_random_real[nrow(results_random_real), ] / new_samples)
 mean(results_HDP_real[nrow(results_HDP_real), ] / new_samples)
 mean(results_HPY_real[nrow(results_HPY_real), ] / new_samples)
-#sum(diff(results_plusDP_mean)) / new_samples
-#sum(diff(results_plusPY_mean)) / new_samples
-#sum(diff(results_indepDP_mean)) / new_samples
-#sum(diff(results_random_mean)) / new_samples
-#sum(diff(results_indepPY_mean)) / new_samples
-#sum(diff(results_HDP_mean)) / new_samples
-#sum(diff(results_HPY_mean)) / new_samples
+
+# Temp
+save.image(file = "/Users/rebaudogiovanni/Library/CloudStorage/Dropbox-CCA/giovanni rebaudo/GitHub/MSSP/Data-and-Results/MAB_trees.RData")
 
 
 

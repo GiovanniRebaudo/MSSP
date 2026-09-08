@@ -86,7 +86,6 @@ est_prob_new_HPY = vector("list", tot_replica)
 true_prob_new = vector("list", tot_replica)
 ############### Gibbs samplers
 run_simulation_replica = function(seed, pmfs, init_samples, new_samples){
-  cat("\nReplica with seed", seed, "\n")
   
   ############### Sample observations for fair comparison of methods
   X = sample_from_pop_all(truth = pmfs, size = init_samples + new_samples,
@@ -115,9 +114,6 @@ run_simulation_replica = function(seed, pmfs, init_samples, new_samples){
   results_plusPY_temp = plusPY_MAB(data = X, new_samples = new_samples, 
                                    init_samples = init_samples, seed = 0)
   
-  # Solve MAB decisions via plusMD (not available)
-  # Results_plusMD = plusMD_MAB(data, new_samples = new_samples, seed = 0)
-  
   # Solve MAB decisions via HPY
   results_HPY_temp = HPY_MAB(data = X, new_samples = new_samples, 
                              init_samples = init_samples, seed = 0)
@@ -144,7 +140,8 @@ run_simulation_replica = function(seed, pmfs, init_samples, new_samples){
 
 replica_results = run_mab_replicas(seed_replicas, run_simulation_replica,
                                   pmfs = pmfs, init_samples = init_samples,
-                                  new_samples = new_samples, workers = n_workers)
+                                  new_samples = new_samples, workers = n_workers,
+                                  progress = TRUE)
 # Collect in the original replica order; leave all subsequent summaries unchanged.
 for(replica in seq_len(tot_replica)){
   result = replica_results[[replica]]
@@ -269,14 +266,6 @@ mean(results_random[nrow(results_random), ] / new_samples)
 mean(results_oracle[nrow(results_oracle), ] / new_samples)
 mean(results_HDP[nrow(results_HDP), ] / new_samples)
 mean(results_HPY[nrow(results_HPY), ] / new_samples)
-#sum(diff(results_plusDP_mean)) / new_samples
-#sum(diff(results_plusPY_mean)) / new_samples
-#sum(diff(results_indepDP_mean)) / new_samples
-#sum(diff(results_indepPY_mean)) / new_samples
-#sum(diff(results_random_mean)) / new_samples
-#sum(diff(results_oracle_mean)) / new_samples
-#sum(diff(results_HDP_mean)) / new_samples
-#sum(diff(results_HPY_mean)) / new_samples
 
 #MSE relative to the true unseen mass on each strategy's own trajectory
 
@@ -330,3 +319,14 @@ ggplot(data, aes(X, Y, fill= ptie)) +
   theme(axis.title.x=element_blank(),
         axis.title.y=element_blank()) + 
   guides(fill=guide_legend(title="Prob. tie"))
+
+# Temp
+c(
+  Ind_DP = RMSE_DP,
+  Ind_PY = RMSE_PY,
+  Add_DP = RMSE_plusDP,
+  Add_PY = RMSE_plusPY,
+  HDP = RMSE_HDP,
+  HPY = RMSE_HPY
+)
+save.image(file = "/Users/rebaudogiovanni/Library/CloudStorage/Dropbox-CCA/giovanni rebaudo/GitHub/MSSP/Data-and-Results/MAB_simul.RData")
