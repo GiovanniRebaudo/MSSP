@@ -3,12 +3,11 @@ library(ggplot2)
 J = 2
 corr_vec = c(0, 0.25, 0.5, 0.75, 1)#when alpha param equal, it equals eps
 n1 = 10000
+data = matrix(NA, nrow = length(corr_vec)*n1, ncol = 2)
+tot_sim = 1000
 
 #HDP ###########################################################################
 ptiewith = 0.5
-
-data = matrix(NA, nrow = length(corr_vec)*n1, ncol = 2)
-tot_sim = 1000
 
 count = 0
 
@@ -125,24 +124,54 @@ ggplot(data_plot_NDP, aes(x = samplesize, y = p_new, color = correlation) )+
 
 #+DP ###########################################################################
 ptiewith = 0.5
-alpha = ptiewith / (1 - ptiewith)
 
-data = matrix(NA, nrow = length(corr_vec)*n1, ncol = 2)
-tot_sim = 10000
+eps_from_rho <- function(rho) {
+  sqrt(rho) / (sqrt(rho) + sqrt(1 - rho))
+}
+
+alpha_from_eps <- function(eps, ptiewith = 0.5) {
+  (eps^2 + (1 - eps)^2) / ptiewith - 1
+}
 
 count = 0
 
-for(corr in corr_vec){
-  print(corr)
-  #label
-  data[(count+1):(count+n1), 1] = rep(corr, n1)
- 
-  r = matrix(rbinom(n1*tot_sim, 1, 1-corr), nrow = n1)
+for (rho in corr_vec) {
   
-  p_new = apply( (corr) * alpha / (alpha + apply(1-r, 2, cumsum)) + 
-    (1-corr), 1, mean)
+  print(rho)
   
-  data[(count+1):(count+n1), 2] = p_new 
+  eps   = eps_from_rho(rho)
+  alpha = alpha_from_eps(eps, ptiewith)
+  
+  # Indicator that an observation from population k comes from Q_0
+  common_indicator <- matrix(
+    rbinom(n1 * tot_sim, size = 1, prob = eps),
+    nrow = n1,
+    ncol = tot_sim
+  )
+  
+  n_common = apply(common_indicator, 2, cumsum)
+  
+  # Probability that a draw from Q_0 is new
+  if (alpha < 1e-12) {
+    
+    # Limit as alpha -> 0
+    p_new_Q0 = (n_common == 0)
+    
+  } else {
+    
+    p_new_Q0 = alpha / (alpha + n_common)
+    
+  }
+  
+  # A draw from Q_j is always new relative to population k
+  p_new = rowMeans(
+    (1 - eps) + eps * p_new_Q0
+  )
+  
+  index = count + seq_len(n1)
+  
+  data[index, 1] = rho
+  data[index, 2] = p_new
   
   count = count + n1
 }
